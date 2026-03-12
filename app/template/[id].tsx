@@ -66,6 +66,9 @@ export default function TemplateDetail() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={() => router.back()}>
+        <Text style={styles.backButton}>← Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Exercises</Text>
 
       <TouchableOpacity
@@ -154,5 +157,10 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  backButton: {
+    fontSize: 16,
+    color: "#007AFF",
+    marginBottom: 16,
   },
 });

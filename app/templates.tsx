@@ -52,6 +52,13 @@ export default function Templates() {
         <Text style={styles.addButtonText}>+ New Template</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.historyButton}
+        onPress={() => router.push("/history")}
+      >
+        <Text style={styles.historyButtonText}>Past Workouts</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={templates}
         keyExtractor={(item) => item.id.toString()}
@@ -108,10 +115,22 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 12,
   },
   addButtonText: {
     color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  historyButton: {
+    backgroundColor: "#e0e0e0",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  historyButtonText: {
+    color: "#333",
     fontSize: 16,
     fontWeight: "bold",
   },

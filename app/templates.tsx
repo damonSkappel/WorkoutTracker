@@ -33,6 +33,11 @@ export default function Templates() {
     }
   };
 
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("token");
+    router.replace("/");
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -43,7 +48,12 @@ export default function Templates() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Templates</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>My Templates</Text>
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={styles.addButton}
@@ -92,7 +102,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 24,
   },
   templateCard: {
     backgroundColor: "#f0f0f0",
@@ -133,5 +142,16 @@ const styles = StyleSheet.create({
     color: "#333",
     fontSize: 16,
     fontWeight: "bold",
+  },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  logoutText: {
+    color: "#FF3B30",
+    fontSize: 16,
   },
 });

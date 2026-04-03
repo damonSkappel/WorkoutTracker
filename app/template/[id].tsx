@@ -34,6 +34,11 @@ export default function TemplateDetail() {
       setExercises(response.data);
       console.log("Exercise data:", JSON.stringify(response.data));
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error fetching exercises:", err.message);
     } finally {
       setLoading(false);
@@ -60,8 +65,12 @@ export default function TemplateDetail() {
       );
       router.push(`/session/${response.data.id}`);
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error", "Failed to start workout");
-      Alert.alert("Error", err.message);
     }
   };
 

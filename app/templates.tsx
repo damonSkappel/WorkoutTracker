@@ -29,6 +29,11 @@ export default function Templates() {
       });
       setTemplates(response.data);
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error fetching templates:", err.message);
     } finally {
       setLoading(false);

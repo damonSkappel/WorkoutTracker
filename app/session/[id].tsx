@@ -33,6 +33,11 @@ export default function Session() {
       setExercises(response.data.exercises);
       setSets(response.data.sets);
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error fetching session:", err.message);
     } finally {
       setLoading(false);
@@ -66,6 +71,11 @@ export default function Session() {
         },
       );
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error saving set:", err.message);
     }
   };
@@ -82,8 +92,12 @@ export default function Session() {
         { text: "OK", onPress: () => router.replace("/templates") },
       ]);
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error", "Failed to complete workout");
-      console.log(err.message);
     }
   };
 

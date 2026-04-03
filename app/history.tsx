@@ -29,6 +29,11 @@ export default function History() {
       });
       setHistory(response.data);
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error fetching history:", err.message);
     } finally {
       setLoading(false);

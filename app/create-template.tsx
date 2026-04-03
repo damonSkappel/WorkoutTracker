@@ -32,6 +32,11 @@ export default function CreateTemplate() {
       );
       router.back();
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error", "Failed to create template");
     } finally {
       setSaving(false);

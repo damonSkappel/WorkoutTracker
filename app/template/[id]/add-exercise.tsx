@@ -38,6 +38,11 @@ export default function AddExercise() {
       );
       router.back();
     } catch (err) {
+      if (err.response?.status === 403) {
+        await AsyncStorage.removeItem("token");
+        router.replace("/");
+        return;
+      }
       Alert.alert("Error", "Failed to add exercise");
       console.log(err.message);
     } finally {

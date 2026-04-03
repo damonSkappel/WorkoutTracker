@@ -33,7 +33,7 @@ export default function Session() {
       setExercises(response.data.exercises);
       setSets(response.data.sets);
     } catch (err) {
-      console.log("Error fetching session:", err.message);
+      Alert.alert("Error fetching session:", err.message);
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export default function Session() {
         },
       );
     } catch (err) {
-      console.log("Error saving set:", err.message);
+      Alert.alert("Error saving set:", err.message);
     }
   };
 

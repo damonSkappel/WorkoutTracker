@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -28,7 +29,7 @@ export default function History() {
       });
       setHistory(response.data);
     } catch (err) {
-      console.log("Error fetching history:", err.message);
+      Alert.alert("Error fetching history:", err.message);
     } finally {
       setLoading(false);
     }

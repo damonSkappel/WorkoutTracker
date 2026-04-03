@@ -5,6 +5,7 @@ import { useState } from "react";
 import { API_URL } from "../utils/config";
 
 import {
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -26,9 +27,7 @@ export default function Index() {
       await AsyncStorage.setItem("token", response.data.token);
       router.replace("/templates");
     } catch (err) {
-      console.log("Full error:", JSON.stringify(err));
-      console.log("Error message:", err.message);
-      setError("Invalid email or password");
+      Alert.alert("Error", "Invalid email or password");
     }
   };
 

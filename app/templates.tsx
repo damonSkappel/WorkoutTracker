@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -28,7 +29,7 @@ export default function Templates() {
       });
       setTemplates(response.data);
     } catch (err) {
-      console.log("Error fetching templates:", err.message);
+      Alert.alert("Error fetching templates:", err.message);
     } finally {
       setLoading(false);
     }

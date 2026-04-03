@@ -1,8 +1,8 @@
 1: add the functionality that when the users token expires they are sent to the login page, claude suggested using 'Axios interceptor'
 
 ------ 10 things claude thinks I should work on,ranked by importance ------
-1. hardcoded localhost:3000 URL - it's copy-pasted across 7 files. Should live in one config file.
-2. No error message shown to users - API failures just console.log silently. Users see blank screens with no explenation.
+########1. hardcoded localhost:3000 URL - it's copy-pasted across 7 files. Should live in one config file.#######
+########2. No error message shown to users - API failures just console.log silently. Users see blank screens with no explenation.#########
 3. No 401 handling / token expiration - Users get stranded on broken screens. 
 4. No token check on app launch - if the app is closed and reopened with an expired token, there's no reidrect to login
 5. Stale data after actions - creating a template or finishing a workout doesn't refresh the list you return to (I think it does, ask for clarification)

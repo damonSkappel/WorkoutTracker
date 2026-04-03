@@ -34,7 +34,7 @@ export default function TemplateDetail() {
       setExercises(response.data);
       console.log("Exercise data:", JSON.stringify(response.data));
     } catch (err) {
-      console.log("Error fetching exercises:", err.message);
+      Alert.alert("Error fetching exercises:", err.message);
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,7 @@ export default function TemplateDetail() {
       router.push(`/session/${response.data.id}`);
     } catch (err) {
       Alert.alert("Error", "Failed to start workout");
-      console.log(err.message);
+      Alert.alert("Error", err.message);
     }
   };
 

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_URL } from "../utils/config";
 
 export default function History() {
   const [history, setHistory] = useState([]);
@@ -22,10 +23,9 @@ export default function History() {
   const fetchHistory = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:3000/api/sessions/history",
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await axios.get(`${API_URL}/api/sessions/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setHistory(response.data);
     } catch (err) {
       console.log("Error fetching history:", err.message);

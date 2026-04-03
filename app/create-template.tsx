@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_URL } from "../utils/config";
 
 export default function CreateTemplate() {
   const [name, setName] = useState("");
@@ -25,7 +26,7 @@ export default function CreateTemplate() {
     try {
       const token = await AsyncStorage.getItem("token");
       await axios.post(
-        "http://localhost:3000/api/templates",
+        `${API_URL}/api/templates`,
         { name },
         { headers: { Authorization: `Bearer ${token}` } },
       );

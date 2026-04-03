@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_URL } from "../../../utils/config";
 
 export default function AddExercise() {
   const { id } = useLocalSearchParams();
@@ -27,7 +28,7 @@ export default function AddExercise() {
     try {
       const token = await AsyncStorage.getItem("token");
       await axios.post(
-        `http://localhost:3000/api/templates/${id}/exercises`,
+        `${API_URL}/api/templates/${id}/exercises`,
         {
           exercise_name: exerciseName,
           default_sets: parseInt(defaultSets),

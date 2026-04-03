@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_URL } from "../../utils/config";
 
 export default function Session() {
   const { id } = useLocalSearchParams();
@@ -26,12 +27,9 @@ export default function Session() {
   const fetchSession = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(
-        `http://localhost:3000/api/sessions/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${API_URL}/api/sessions/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setExercises(response.data.exercises);
       setSets(response.data.sets);
     } catch (err) {
@@ -57,7 +55,7 @@ export default function Session() {
     try {
       const token = await AsyncStorage.getItem("token");
       await axios.put(
-        `http://localhost:3000/api/sets/${setId}`,
+        `${API_URL}/api/sets/${setId}`,
         {
           weight: parseFloat(set.weight),
           reps: parseInt(set.reps),
@@ -76,7 +74,7 @@ export default function Session() {
     try {
       const token = await AsyncStorage.getItem("token");
       await axios.put(
-        `http://localhost:3000/api/sessions/${id}`,
+        `${API_URL}/api/sessions/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );

@@ -1,0 +1,18 @@
+1: add the functionality that when the users token expires they are sent to the login page, claude suggested using 'Axios interceptor'
+
+------ 10 things claude thinks I should work on,ranked by importance ------
+1. hardcoded localhost:3000 URL - it's copy-pasted across 7 files. Should live in one config file.
+2. No error message shown to users - API failures just console.log silently. Users see blank screens with no explenation.
+3. No 401 handling / token expiration - Users get stranded on broken screens. 
+4. No token check on app launch - if the app is closed and reopened with an expired token, there's no reidrect to login
+5. Stale data after actions - creating a template or finishing a workout doesn't refresh the list you return to (I think it does, ask for clarification)
+6. Duplicate key bug in History Screen - keyExtractor uses template_id, but multiple sessions share the same template, so React gets duplate keys. 
+7. Missing id in useEffect dependency in the template detail screen - could show wrong exercises if you navigate between templates quickly
+8. No input validation on sets - you can add 0 or negative sets to a template. 
+9. No loading state on the login button - it can be tapped multiple times while the request is in flight. 
+10. Typescript is in loose mode - "strict" : false in tsconfig means type errors can slip through silently. 
+
+
+
+
+11. Don't let someone start a workout if they don't have any workouts in the template. 

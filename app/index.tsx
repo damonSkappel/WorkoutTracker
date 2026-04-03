@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
+import { API_URL } from "../utils/config";
+
 import {
   StyleSheet,
   Text,
@@ -17,7 +19,7 @@ export default function Index() {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post("http://localhost:3000/auth/login", {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
       });

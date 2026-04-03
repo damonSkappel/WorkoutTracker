@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_URL } from "../../utils/config";
 
 export default function TemplateDetail() {
   const { id } = useLocalSearchParams();
@@ -25,7 +26,7 @@ export default function TemplateDetail() {
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:3000/api/templates/${id}/exercises`,
+        `${API_URL}/api/templates/${id}/exercises`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -50,7 +51,7 @@ export default function TemplateDetail() {
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:3000/api/sessions`,
+        `${API_URL}/api/sessions`,
         {
           template_id: id,
           date: new Date().toISOString().split("T")[0],

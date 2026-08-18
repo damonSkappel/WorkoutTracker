@@ -90,10 +90,19 @@ export default function TemplateDetail() {
         data={exercises}
         keyExtractor={(item) => `exercise-${item.id}`}
         renderItem={({ item }) => (
-          <View style={styles.exerciseCard}>
+          <TouchableOpacity
+            style={styles.exerciseCard}
+            onPress={() =>
+              router.push(
+                `/template/${id}/add-exercise?exerciseId=${item.id}`,
+              )
+            }
+          >
             <Text style={styles.exerciseName}>{item.exercise_name}</Text>
-            <Text style={styles.exerciseSets}>{item.default_sets} sets</Text>
-          </View>
+            <Text style={styles.exerciseSets}>
+              {item.default_sets} {item.default_sets === 1 ? "set" : "sets"} ›
+            </Text>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>No exercises yet.</Text>}
       />

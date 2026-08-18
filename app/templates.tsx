@@ -1,7 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,38 +9,34 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../utils/config";
+import { api, getErrorMessage } from "../utils/api";
+import { useAuth } from "../utils/auth";
 
 export default function Templates() {
-  const [templates, setTemplates] = useState([]);
+  const { signOut } = useAuth();
+  const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/templates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/api/templates");
       setTemplates(response.data);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error fetching templates:", err.message);
+    } catch (err: any) {
+      Alert.alert("Error", getErrorMessage(err, "Failed to fetch templates"));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchTemplates();
+    }, [fetchTemplates]),
+  );
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    router.replace("/");
+    await signOut();
   };
 
   if (loading) {
@@ -78,7 +72,7 @@ export default function Templates() {
 
       <FlatList
         data={templates}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => `template-${item.id}`}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.templateCard}

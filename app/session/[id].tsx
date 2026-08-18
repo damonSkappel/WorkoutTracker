@@ -1,7 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,92 +10,74 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../../utils/config";
+import { api, getErrorMessage } from "../../utils/api";
 
 export default function Session() {
   const { id } = useLocalSearchParams();
-  const [exercises, setExercises] = useState([]);
-  const [sets, setSets] = useState([]);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [sets, setSets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSession();
-  }, []);
-
-  const fetchSession = async () => {
+  const fetchSession = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/sessions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get(`/api/sessions/${id}`);
       setExercises(response.data.exercises);
       setSets(response.data.sets);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error fetching session:", err.message);
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to fetch session");
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const getSetsForExercise = (exerciseId) => {
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
+
+  const getSetsForExercise = (exerciseId: number) => {
     return sets.filter((set) => set.template_exercise_id === exerciseId);
   };
 
-  const updateSetValue = (setId, field, value) => {
+  const updateSetValue = (setId: number, field: string, value: string) => {
     setSets((prev) =>
       prev.map((set) => (set.id === setId ? { ...set, [field]: value } : set)),
     );
   };
 
-  const saveSet = async (setId) => {
+  const saveSet = async (setId: number) => {
     const set = sets.find((s) => s.id === setId);
-    if (!set.weight || !set.reps) return;
+    if (!set) return;
+
+    const weight = Number(set.weight);
+    const reps = Number(set.reps);
+
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight < 0 || reps <= 0) {
+      Alert.alert("Invalid set", "Weight and reps must be valid numbers, and reps must be greater than zero.");
+      return;
+    }
+
     try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.put(
-        `${API_URL}/api/sets/${setId}`,
-        {
-          weight: parseFloat(set.weight),
-          reps: parseInt(set.reps),
-          completed: true,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error saving set:", err.message);
+      await api.put(`/api/sets/${setId}`, {
+        weight,
+        reps,
+        completed: true,
+      });
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to save set");
+      Alert.alert("Error", message);
     }
   };
 
   const handleFinish = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.put(
-        `${API_URL}/api/sessions/${id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.put(`/api/sessions/${id}`, {});
       Alert.alert("Workout Complete!", "Great job!", [
         { text: "OK", onPress: () => router.replace("/templates") },
       ]);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error", "Failed to complete workout");
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to complete workout");
+      Alert.alert("Error", message);
     }
   };
 
@@ -115,7 +95,7 @@ export default function Session() {
 
       <FlatList
         data={exercises}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => `exercise-${item.id}`}
         renderItem={({ item }) => (
           <View style={styles.exerciseCard}>
             <Text style={styles.exerciseName}>{item.exercise_name}</Text>
@@ -127,14 +107,14 @@ export default function Session() {
             </View>
 
             {getSetsForExercise(item.id).map((set, index) => (
-              <View key={set.id} style={styles.setRow}>
+              <View key={`set-${set.id}`} style={styles.setRow}>
                 <Text style={[styles.setNumber, { flex: 0.5 }]}>
                   {index + 1}
                 </Text>
                 <TextInput
                   style={styles.setInput}
                   placeholder="0"
-                  value={set.weight ? set.weight.toString() : ""}
+                  value={set.weight !== null && set.weight !== undefined ? String(set.weight) : ""}
                   onChangeText={(val) => updateSetValue(set.id, "weight", val)}
                   onEndEditing={() => saveSet(set.id)}
                   keyboardType="decimal-pad"
@@ -142,7 +122,7 @@ export default function Session() {
                 <TextInput
                   style={styles.setInput}
                   placeholder="0"
-                  value={set.reps ? set.reps.toString() : ""}
+                  value={set.reps !== null && set.reps !== undefined ? String(set.reps) : ""}
                   onChangeText={(val) => updateSetValue(set.id, "reps", val)}
                   onEndEditing={() => saveSet(set.id)}
                   keyboardType="number-pad"

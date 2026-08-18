@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../../../utils/config";
+import { api, getErrorMessage } from "../../../utils/api";
 
 export default function AddExercise() {
   const { id } = useLocalSearchParams();
@@ -19,32 +17,30 @@ export default function AddExercise() {
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
-    if (!exerciseName.trim()) {
+    const trimmedName = exerciseName.trim();
+    const parsedDefaultSets = Number(defaultSets);
+
+    if (!trimmedName) {
       Alert.alert("Error", "Please enter an exercise name");
+      return;
+    }
+
+    if (!Number.isInteger(parsedDefaultSets) || parsedDefaultSets <= 0) {
+      Alert.alert("Error", "Default sets must be a whole number greater than zero.");
       return;
     }
 
     setSaving(true);
     try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/api/templates/${id}/exercises`,
-        {
-          exercise_name: exerciseName,
-          default_sets: parseInt(defaultSets),
-          order_index: 1,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.post(`/api/templates/${id}/exercises`, {
+        exercise_name: trimmedName,
+        default_sets: parsedDefaultSets,
+        order_index: 1,
+      });
       router.back();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error", "Failed to add exercise");
-      console.log(err.message);
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to add exercise");
+      Alert.alert("Error", message);
     } finally {
       setSaving(false);
     }

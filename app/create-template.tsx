@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,34 +8,27 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../utils/config";
+import { api, getErrorMessage } from "../utils/api";
 
 export default function CreateTemplate() {
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleCreate = async () => {
-    if (!name.trim()) {
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
       Alert.alert("Error", "Please enter a template name");
       return;
     }
 
     setSaving(true);
     try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/api/templates`,
-        { name },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.post("/api/templates", { name: trimmedName });
       router.back();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error", "Failed to create template");
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to create template");
+      Alert.alert("Error", message);
     } finally {
       setSaving(false);
     }

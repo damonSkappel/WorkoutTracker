@@ -1,7 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,39 +9,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../../utils/config";
+import { api, getErrorMessage } from "../../utils/api";
 
 export default function TemplateDetail() {
   const { id } = useLocalSearchParams();
-  const [exercises, setExercises] = useState([]);
+  const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startingWorkout, setStartingWorkout] = useState(false);
 
-  useEffect(() => {
-    fetchExercises();
-  }, []);
-
-  const fetchExercises = async () => {
+  const fetchExercises = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(
-        `${API_URL}/api/templates/${id}/exercises`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await api.get(`/api/templates/${id}/exercises`);
       setExercises(response.data);
-      console.log("Exercise data:", JSON.stringify(response.data));
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error fetching exercises:", err.message);
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to load exercises");
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchExercises();
+    }, [fetchExercises]),
+  );
 
   if (loading) {
     return (
@@ -52,25 +43,26 @@ export default function TemplateDetail() {
       </View>
     );
   }
+
   const handleStartWorkout = async () => {
+    if (!exercises.length) {
+      Alert.alert("No exercises", "Add at least one exercise before starting a workout.");
+      return;
+    }
+
+    setStartingWorkout(true);
+
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.post(
-        `${API_URL}/api/sessions`,
-        {
-          template_id: id,
-          date: new Date().toISOString().split("T")[0],
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await api.post("/api/sessions", {
+        template_id: id,
+        date: new Date().toISOString().split("T")[0],
+      });
       router.push(`/session/${response.data.id}`);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error", "Failed to start workout");
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to start workout");
+      Alert.alert("Error", message);
+    } finally {
+      setStartingWorkout(false);
     }
   };
 
@@ -87,13 +79,19 @@ export default function TemplateDetail() {
       >
         <Text style={styles.addButtonText}>+ Add Exercise</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.startButton} onPress={handleStartWorkout}>
-        <Text style={styles.startButtonText}>Start Workout</Text>
+      <TouchableOpacity
+        style={[styles.startButton, startingWorkout && styles.startButtonDisabled]}
+        onPress={handleStartWorkout}
+        disabled={startingWorkout}
+      >
+        <Text style={styles.startButtonText}>
+          {startingWorkout ? "Starting..." : "Start Workout"}
+        </Text>
       </TouchableOpacity>
 
       <FlatList
         data={exercises}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => `exercise-${item.id}`}
         renderItem={({ item }) => (
           <View style={styles.exerciseCard}>
             <Text style={styles.exerciseName}>{item.exercise_name}</Text>
@@ -162,6 +160,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginBottom: 24,
+  },
+  startButtonDisabled: {
+    backgroundColor: "#8dd9a4",
   },
   startButtonText: {
     color: "white",

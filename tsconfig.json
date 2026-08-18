@@ -3,7 +3,12 @@
   "compilerOptions": {
     "strict": false,
     "noImplicitAny": false,
-    "jsx": "react-native"
+    "jsx": "react-native",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["app/**/*.ts", "app/**/*.tsx", "utils/**/*.ts", "utils/**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["components", "hooks", "constants", "scripts"]
 }

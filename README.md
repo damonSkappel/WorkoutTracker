@@ -1,50 +1,42 @@
-# Welcome to your Expo app 👋
+# WorkoutTracker Mobile App (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native mobile app for workout templates, workout sessions, and history.
 
-## Get started
+## Local startup
 
-1. Install dependencies
-
+1. Install frontend dependencies:
    ```bash
    npm install
    ```
-
-2. Start the app
-
+2. Create an env file from [.env.example](.env.example):
+   ```bash
+   cp .env.example .env
+   ```
+3. Make sure backend API is running on the URL in `EXPO_PUBLIC_API_URL`.
+4. Start Expo:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Auth/session handling
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Sessions use a short-lived access token plus a long-lived refresh token, both
+  kept in `expo-secure-store` (with an AsyncStorage fallback for web).
+- `utils/auth.tsx` holds session state; `app/_layout.tsx` gates routes on it via
+  `Stack.Protected`, so signed-out users never reach a protected screen.
+- Expired access tokens are refreshed transparently by the axios interceptors in
+  `utils/api.ts`. Concurrent requests share a single refresh.
+- If the refresh token is dead, the session ends and the login screen explains
+  why. Logging out revokes the refresh token server-side.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Environment and deployment prep
 
-## Get a fresh project
+- `EXPO_PUBLIC_API_URL` should point to your deployed backend in staging/production.
+- `EXPO_PUBLIC_APP_ENV` should be one of: `development`, `staging`, `production`.
+- Do not ship a production build with `localhost` API URLs.
 
-When you're ready, run:
+## Useful scripts
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `npm run lint` – lint checks
+- `npx tsc --noEmit` – TypeScript compile check
+- `npm run ios` / `npm run android` – open simulator flows

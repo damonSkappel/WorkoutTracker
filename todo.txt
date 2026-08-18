@@ -37,3 +37,4 @@
 38. Improve loading and error states - login, template fetches, and workout actions should show clear progress and failure feedback.
 39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode after the big runtime issues are cleaned up.
 40. Add backend startup docs - document the required Postgres database, environment variables, and seed data so the project is easier to restart later.
+41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists. 

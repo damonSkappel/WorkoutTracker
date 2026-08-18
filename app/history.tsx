@@ -1,7 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,34 +9,30 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_URL } from "../utils/config";
+import { api, getErrorMessage } from "../utils/api";
 
 export default function History() {
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/sessions/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/api/sessions/history");
       setHistory(response.data);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        await AsyncStorage.removeItem("token");
-        router.replace("/");
-        return;
-      }
-      Alert.alert("Error fetching history:", err.message);
+    } catch (err: any) {
+      const message = getErrorMessage(err, "Failed to fetch history");
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchHistory();
+    }, [fetchHistory]),
+  );
 
   if (loading) {
     return (
@@ -56,12 +50,12 @@ export default function History() {
       </TouchableOpacity>
       <FlatList
         data={history}
-        keyExtractor={(item) => item.template_id.toString()}
+        keyExtractor={(item) => `template-${item.template_id}`}
         renderItem={({ item }) => (
           <View style={styles.templateGroup}>
             <Text style={styles.templateName}>{item.template_name}</Text>
-            {item.sessions.map((session) => (
-              <View key={session.session_id} style={styles.sessionRow}>
+            {item.sessions.map((session: any) => (
+              <View key={`session-${session.session_id}`} style={styles.sessionRow}>
                 <Text style={styles.sessionDate}>
                   {new Date(session.date).toLocaleDateString()}
                 </Text>

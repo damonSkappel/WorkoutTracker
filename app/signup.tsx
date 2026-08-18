@@ -8,23 +8,29 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { api, consumeAuthNotice, NETWORK_ERROR_MESSAGE } from "../utils/api";
+import { api, NETWORK_ERROR_MESSAGE } from "../utils/api";
 import { useAuth } from "../utils/auth";
 
-export default function Index() {
+export default function Signup() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  // Explains why we're back here, e.g. an expired session. Read once on mount.
-  const [error, setError] = useState(() => consumeAuthNotice() ?? "");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     const trimmedEmail = email.trim();
+    const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedEmail || !trimmedPassword) {
-      setError("Please enter both email and password.");
+    if (!trimmedEmail || !trimmedUsername || !trimmedPassword) {
+      setError("Please fill in every field.");
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -32,26 +38,31 @@ export default function Index() {
     setError("");
 
     try {
-      const response = await api.post("/auth/login", {
+      const response = await api.post("/auth/register", {
         email: trimmedEmail,
+        username: trimmedUsername,
         password: trimmedPassword,
       });
       // The route guard swaps in the protected screens once this resolves.
       await signIn(response.data.token, response.data.refreshToken);
     } catch (err: any) {
       const message = err?.response
-        ? err.response.data?.error || "Invalid email or password"
+        ? err.response.data?.error || "Could not create account"
         : NETWORK_ERROR_MESSAGE;
       setError(message);
-      Alert.alert("Login failed", message);
+      Alert.alert("Sign up failed", message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const clearError = () => {
+    if (error) setError("");
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Workout Tracker</Text>
+      <Text style={styles.title}>Create Account</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -61,10 +72,21 @@ export default function Index() {
         value={email}
         onChangeText={(value) => {
           setEmail(value);
-          if (error) setError("");
+          clearError();
         }}
         autoCapitalize="none"
         keyboardType="email-address"
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        value={username}
+        onChangeText={(value) => {
+          setUsername(value);
+          clearError();
+        }}
+        autoCapitalize="none"
       />
 
       <TextInput
@@ -73,23 +95,23 @@ export default function Index() {
         value={password}
         onChangeText={(value) => {
           setPassword(value);
-          if (error) setError("");
+          clearError();
         }}
         secureTextEntry
       />
 
       <TouchableOpacity
         style={[styles.button, isSubmitting && styles.buttonDisabled]}
-        onPress={handleLogin}
+        onPress={handleSignup}
         disabled={isSubmitting}
       >
         <Text style={styles.buttonText}>
-          {isSubmitting ? "Logging in..." : "Login"}
+          {isSubmitting ? "Creating account..." : "Sign Up"}
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/signup")}>
-        <Text style={styles.link}>Don&apos;t have an account? Sign up</Text>
+      <TouchableOpacity onPress={() => router.replace("/")}>
+        <Text style={styles.link}>Already have an account? Log in</Text>
       </TouchableOpacity>
     </View>
   );

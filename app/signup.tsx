@@ -11,6 +11,16 @@ import {
 import { api, NETWORK_ERROR_MESSAGE } from "../utils/api";
 import { useAuth } from "../utils/auth";
 
+// Mirrors the backend's checks so the form can fail fast without a round trip.
+// The backend still enforces all of these -- this is convenience, not security.
+const MIN_USERNAME_LENGTH = 2;
+const MAX_USERNAME_LENGTH = 30;
+const MIN_PASSWORD_LENGTH = 6;
+
+// Intentionally loose: catches honest typos like a missing @, without rejecting
+// unusual but valid addresses. Only sending mail proves an address really works.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Signup() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
@@ -29,8 +39,23 @@ export default function Signup() {
       return;
     }
 
-    if (trimmedPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!EMAIL_PATTERN.test(trimmedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (
+      trimmedUsername.length < MIN_USERNAME_LENGTH ||
+      trimmedUsername.length > MAX_USERNAME_LENGTH
+    ) {
+      setError(
+        `Username must be between ${MIN_USERNAME_LENGTH} and ${MAX_USERNAME_LENGTH} characters.`,
+      );
+      return;
+    }
+
+    if (trimmedPassword.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
 

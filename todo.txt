@@ -1,64 +1,77 @@
 
-  "email": "test@gmail.com",          
-  "username": "testuser",               
+  "email": "test@gmail.com",
+  "username": "testuser",
   "password": "password123"
 
 
-1: add the functionality that when the users token expires they are sent to the login page, claude suggested using 'Axios interceptor'
+[DONE] 1: add the functionality that when the users token expires they are sent to the login page, claude suggested using 'Axios interceptor'
 
 ------ 10 things claude thinks I should work on,ranked by importance ------
-########1. hardcoded localhost:3000 URL - it's copy-pasted across 7 files. Should live in one config file.#######
-########2. No error message shown to users - API failures just console.log silently. Users see blank screens with no explenation.#########
-########3. No 401 handling / token expiration - Users get stranded on broken screens. ########
-########4. No token check on app launch - if the app is closed and reopened with an expired token, there's no reidrect to login########
-########5. Stale data after actions - creating a template or finishing a workout doesn't refresh the list you return to (I think it does, ask for clarification)########
-########6. Duplicate key bug in History Screen - keyExtractor uses template_id, but multiple sessions share the same template, so React gets duplate keys. #######
-7. Missing id in useEffect dependency in the template detail screen - could show wrong exercises if you navigate between templates quickly
-8. No input validation on sets - you can add 0 or negative sets to a template. 
-9. No loading state on the login button - it can be tapped multiple times while the request is in flight. 
-10. Typescript is in loose mode - "strict" : false in tsconfig means type errors can slip through silently. 
-11. When user makes a new template, they go directly to the add new exercises screen 
+[DONE] 1. hardcoded localhost:3000 URL - it's copy-pasted across 7 files. Should live in one config file.
+[DONE] 2. No error message shown to users - API failures just console.log silently. Users see blank screens with no explenation.
+[DONE] 3. No 401 handling / token expiration - Users get stranded on broken screens.
+[DONE] 4. No token check on app launch - if the app is closed and reopened with an expired token, there's no reidrect to login
+[DONE] 5. Stale data after actions - every screen now refetches on focus (useFocusEffect).
+[DONE] 6. Duplicate key bug in History Screen - keys are now `template-${template_id}` for groups and `session-${session_id}` for rows.
+[DONE] 7. Missing id in useEffect dependency in the template detail screen - fetchExercises is now a useCallback keyed on [id].
+[DONE] 8. No input validation on sets - the sets picker is a bounded 1-10 stepper and the backend rejects anything outside that range.
+[DONE] 9. No loading state on the login button - button disables and shows "Logging in..." while in flight.
+[OPEN] 10. Typescript is in loose mode - "strict" : false in tsconfig means type errors can slip through silently.
+             NOTE: tsconfig also EXCLUDES components/hooks/constants/scripts, which is why tsc passes today.
+             Those errors were sidestepped, not fixed, so this is bigger than it looks. Same as 39.
+[OPEN] 11. When user makes a new template, they go directly to the add new exercises screen
 
 
 
-11. Don't let someone start a workout if they don't have any workouts in the template. 
+[DONE] 11. Don't let someone start a workout if they don't have any workouts in the template.
+             (blocked in the app AND in sessionController.post)
 
 
 
-29. BIG CHANGE: LOOK AT CHANGING SETS. 
-30. Fix backend template creation bug - `src/controllers/templateController.js` uses `req.user.user_id` in one place but the token/middleware populate `req.user.userId`; this can break template creation or make the code misleading.
-31. Add a shared API client with auth handling - centralize the backend URL and attach the JWT token in one place instead of repeating headers in every screen.
-32. Add token-expiry handling - use an Axios interceptor or shared request wrapper so expired tokens send the user back to login cleanly.
-33. Re-check app launch auth - if the stored token is missing or expired, route straight to the login screen before the user sees protected pages.
-34. Fix stale refresh after writes - after creating a template, adding an exercise, starting a workout, or finishing a session, refresh the destination screen instead of relying on old in-memory data.
-35. Fix the history duplicate-key issue - the history screen currently keys grouped rows by `template_id`, which can collide if the UI shape changes; use a unique row key strategy for the rendered list.
-36. Add validation for sets and exercises - block 0/negative set counts, blank exercise names, and invalid numeric inputs before sending them to the API.
-37. Prevent empty workouts from starting - stop session creation unless the template has at least one exercise.
-38. Improve loading and error states - login, template fetches, and workout actions should show clear progress and failure feedback.
-39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode after the big runtime issues are cleaned up.
-40. Add backend startup docs - document the required Postgres database, environment variables, and seed data so the project is easier to restart later.
-41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists. 
+[DONE] 29. BIG CHANGE: LOOK AT CHANGING SETS.
+             Set count is now 1-10, choosable on add and editable afterwards.
+             No schema change was needed - template_exercises.default_sets already existed.
+[DONE] 30. Fix backend template creation bug - `req.user.user_id` vs `req.user.userId`.
+[DONE] 31. Add a shared API client with auth handling - utils/api.ts
+[DONE] 32. Add token-expiry handling - axios interceptors, now with silent refresh.
+[DONE] 33. Re-check app launch auth - AuthProvider checks at launch, route guard gates the screens.
+[DONE] 34. Fix stale refresh after writes - useFocusEffect on templates, history and template detail.
+[DONE] 35. Fix the history duplicate-key issue.
+[DONE] 36. Add validation for sets and exercises - blank names and out-of-range set counts rejected on both sides.
+[DONE] 37. Prevent empty workouts from starting.
+[DONE] 38. Improve loading and error states.
+[OPEN] 39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode. (same as 10)
+[DONE] 40. Add backend startup docs - backend README now covers Postgres, env vars, migrations and the auth model.
+[DONE] 41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists.
+             Email format + uniqueness now checked, username 2-30 chars, password 6+.
+             DECIDED: usernames are display-only and NOT unique (you log in with email).
+             Cleaned up 10 junk/invalid accounts; users 4, 5, 10 kept.
 
 ------ auth hardening: still to test (2026-08-18) ------
-42. TEST token refresh - log in, leave the app idle 20+ minutes, come back and tap
-    around. Access tokens expire in 15 min, so it should refresh silently and you
-    should notice nothing. Getting bounced to login = bug.
-43. TEST rate limiting - 11 wrong passwords in a row should return 429. Note this
-    locks that IP for 15 minutes; restarting the backend clears it.
-    Already passed: short password, login/logout, lands on /templates, backend-down message.
+[OPEN] 42. TEST token refresh - log in, leave the app idle 20+ minutes, come back and tap around.
+             Should refresh silently. Getting bounced to login = bug.
+             (tip: set JWT_EXPIRES_IN=30s in the backend .env to test this in seconds, then revert)
+[OPEN] 43. TEST rate limiting - 11 wrong passwords in a row should return 429.
+             Verified server-side already; not yet tried from the app.
+             Already passed: short password, login/logout, lands on /templates, backend-down message.
 
 ------ found while fixing the set entry bug (2026-08-18) ------
-44. SECURITY: setController.updateSet has no ownership check. It runs
-    "UPDATE sets ... WHERE id = $1" with no user_id filter, so any logged-in user
-    can overwrite any other user's set by guessing an id. Needs a join back to
-    workout_sessions.user_id.
-45. Remove the leftover debug console.logs in setController.updateSet.
-46. Email format is never validated, and username has no uniqueness check
-    (expands on 41).
+[DONE] 44. SECURITY: setController.updateSet had no ownership check.
+             Fixed, plus six more endpoints with the same hole. GET /api/users was
+             returning every user's bcrypt password hash to any logged-in caller.
+[DONE] 45. Remove the leftover debug console.logs in setController.updateSet.
+[DONE] 46. Email format now validated. Username uniqueness deliberately NOT enforced - see 41.
 
 ------ found while fixing authorization (2026-08-18) ------
-47. BUG: the "Default sets" field on Add Exercise has never worked. The app sends
-    default_sets, but templateController.postExercise destructures only
-    { exercise_name, order_index } and never inserts it, so every exercise falls
-    back to the column default of 3. Asked for 2 sets in testing, got 3.
-    (44 and 45 are now done.)
+[DONE] 47. BUG: the "Default sets" field on Add Exercise never worked - default_sets was
+             destructured away and never inserted, so everything got the column default of 3.
+
+------ open, smallest first (2026-08-18) ------
+48. [OPEN] After creating a template, go straight to Add Exercise instead of back to the list.
+           (same as 11 - you can't start a workout without exercises anyway)
+49. [OPEN] Add an index on sets.session_id. Loading a workout does WHERE session_id = X,
+           which is a full table scan today. Invisible at 60 rows, slow at 60,000.
+50. [DONE] Signup validation + cleaned up the bad users (41/46).
+51. DECIDED: no delete for exercises/templates for now. The foreign keys are already
+           ON DELETE NO ACTION, so Postgres refuses these deletes - the decision is
+           already enforced, nothing to build.

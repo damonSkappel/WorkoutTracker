@@ -48,6 +48,9 @@ export default function AddExercise() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={() => router.back()} disabled={saving}>
+        <Text style={styles.backButton}>← Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Add Exercise</Text>
 
       <TextInput
@@ -88,6 +91,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 32,
+  },
+  backButton: {
+    fontSize: 16,
+    color: "#007AFF",
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,

@@ -38,3 +38,20 @@
 39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode after the big runtime issues are cleaned up.
 40. Add backend startup docs - document the required Postgres database, environment variables, and seed data so the project is easier to restart later.
 41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists. 
+
+------ auth hardening: still to test (2026-08-18) ------
+42. TEST token refresh - log in, leave the app idle 20+ minutes, come back and tap
+    around. Access tokens expire in 15 min, so it should refresh silently and you
+    should notice nothing. Getting bounced to login = bug.
+43. TEST rate limiting - 11 wrong passwords in a row should return 429. Note this
+    locks that IP for 15 minutes; restarting the backend clears it.
+    Already passed: short password, login/logout, lands on /templates, backend-down message.
+
+------ found while fixing the set entry bug (2026-08-18) ------
+44. SECURITY: setController.updateSet has no ownership check. It runs
+    "UPDATE sets ... WHERE id = $1" with no user_id filter, so any logged-in user
+    can overwrite any other user's set by guessing an id. Needs a join back to
+    workout_sessions.user_id.
+45. Remove the leftover debug console.logs in setController.updateSet.
+46. Email format is never validated, and username has no uniqueness check
+    (expands on 41).

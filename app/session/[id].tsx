@@ -45,12 +45,43 @@ export default function Session() {
     );
   };
 
-  const saveSet = async (setId: number) => {
+  const saveSet = async (setId: number, weightOverride?: string) => {
     const set = sets.find((s) => s.id === setId);
     if (!set) return;
 
-    const weight = Number(set.weight);
-    const reps = Number(set.reps);
+    const rawWeight =
+      weightOverride ?? (set.weight == null ? "" : String(set.weight).trim());
+    const rawReps = set.reps == null ? "" : String(set.reps).trim();
+
+    // Leaving the weight field to go fill in reps fires onEndEditing while the
+    // row is still half-entered. That's the normal way to type a set, not a
+    // mistake, so say nothing until the reps are in.
+    if (!rawReps) return;
+
+    // Reps are in but the weight is blank. That's either an oversight or a
+    // bodyweight exercise, and only the user knows which.
+    if (!rawWeight) {
+      Alert.alert(
+        "No weight entered",
+        "Add a weight, or record this as a bodyweight set and we'll save it as 0.",
+        [
+          { text: "Add weight", style: "cancel" },
+          {
+            text: "Bodyweight",
+            onPress: () => {
+              updateSetValue(setId, "weight", "0");
+              // Passed explicitly: the state update above has not landed yet,
+              // so re-reading `sets` here would still see it blank.
+              saveSet(setId, "0");
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    const weight = Number(rawWeight);
+    const reps = Number(rawReps);
 
     if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight < 0 || reps <= 0) {
       Alert.alert("Invalid set", "Weight and reps must be valid numbers, and reps must be greater than zero.");
@@ -69,11 +100,25 @@ export default function Session() {
     }
   };
 
+  const handleLeave = () => {
+    Alert.alert(
+      "Leave workout?",
+      "Sets you've already entered are saved. The workout stays in progress, so you can come back to it.",
+      [
+        { text: "Stay", style: "cancel" },
+        { text: "Leave", style: "destructive", onPress: () => router.back() },
+      ],
+    );
+  };
+
   const handleFinish = async () => {
     try {
       await api.put(`/api/sessions/${id}`, {});
       Alert.alert("Workout Complete!", "Great job!", [
-        { text: "OK", onPress: () => router.replace("/templates") },
+        // dismissTo pops back to the existing templates screen. replace() would
+        // swap this screen for a second copy of it, leaving the finished
+        // workout's template still sitting behind it in the stack.
+        { text: "OK", onPress: () => router.dismissTo("/templates") },
       ]);
     } catch (err: any) {
       const message = getErrorMessage(err, "Failed to complete workout");
@@ -91,6 +136,9 @@ export default function Session() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={handleLeave}>
+        <Text style={styles.backButton}>← Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Active Workout</Text>
 
       <FlatList
@@ -156,6 +204,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 24,
+  },
+  backButton: {
+    fontSize: 16,
+    color: "#007AFF",
+    marginBottom: 16,
   },
   exerciseCard: {
     backgroundColor: "#f0f0f0",

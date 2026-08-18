@@ -1,0 +1,194 @@
+Workout Tracker app and deployment notes
+
+Summary
+- This project is a mobile workout tracker app with a separate backend API and PostgreSQL database.
+- The frontend is Expo/React Native and the backend is Express/Postgres.
+- Local development is fine now, but for production or App Store release you will need to move the backend and database to managed hosting.
+- The app architecture is workable and not a total rewrite risk, as long as the app stays organized and configuration remains environment-based.
+
+App Store / managed platform reality check
+- Moving everything later is not a rewrite, but it is extra work.
+- The biggest production steps are backend hosting, database hosting, environment variables, HTTPS, authentication, monitoring, and app signing.
+- The app will not be App Store ready just because it runs locally.
+- The app can remain local-first for a while, but eventually you will need managed infrastructure if you want real usage, reliability, and more than just a local prototype.
+
+What needs to happen later
+1. Backend hosting
+   - Move the Express backend off your laptop.
+   - Use a managed service like Render, Railway, Fly.io, Azure App Service, or Azure Container Apps.
+   - Keep the API code separate from the mobile app.
+
+2. Database hosting
+   - Move Postgres out of local dev.
+   - Options: Supabase, Neon, Railway Postgres, Azure Database for PostgreSQL.
+   - Keep backups and connection security in place.
+
+3. API URL configuration
+   - Replace localhost with a production API URL.
+   - Centralize this in config so the app can switch between local dev and production.
+
+4. Auth and security
+   - Use environment variables for JWT secret and DB credentials.
+   - Make sure HTTPS is enforced.
+   - Add better error handling for expired or invalid tokens.
+   - Consider refresh tokens later if needed.
+
+5. App Store production builds
+   - Use Expo EAS or another proper build pipeline.
+   - Set up iOS/Android signing and store accounts.
+   - Add app icons, splash screen, permissions, privacy metadata, and compliance details.
+
+6. Monitoring and operations
+   - Add logging, crash tracking, and basic health checks.
+   - Add database backups and deployment process.
+   - Keep a staging environment to test changes before production.
+
+Good production path
+- Keep the current architecture for now.
+- Stay local while the app is still unstable.
+- Fix the app logic and backend issues first.
+- When the app feels stable, move to managed backend + managed database.
+- Then do Expo production builds and app publishing.
+
+Best practical path for this project
+- Phase 1: stabilize local app and backend
+- Phase 2: fix auth, stale data, validation, and UX issues
+- Phase 3: secure env vars and clean config
+- Phase 4: deploy backend to managed host
+- Phase 5: deploy Postgres to managed service
+- Phase 6: build app for App Store / Play Store
+
+Pros and cons of managed hosting
+Pros
+- Easier for production than running on your machine
+- Better uptime and reliability
+- Easier scaling later
+- Backups and monitoring usually included
+- Safer than local env vars and local DBs
+
+Cons
+- More setup and config work
+- Costs money once you scale or use some platforms
+- Requires environment management and deployment discipline
+- Need to handle prod DB migration and release rollbacks
+
+Do you need to do this eventually?
+- Yes, if you want the app to be public, shared, or app-store ready.
+- No, not immediately if you are still building and testing locally.
+- But it becomes important before production usage and before publishing.
+
+Free / student-friendly options
+- GitHub Student Developer Pack can help with some cloud credits and services.
+- Free or low-cost options to explore:
+  - Supabase free tier
+  - Neon free tier
+  - Render free tier for small apps
+  - Railway free starter tier
+  - Azure student credits / free service tiers if available
+
+These are good for learning and small prototype workloads.
+
+Important takeaway
+- Local dev is the right place to start.
+- Managed infrastructure is not a huge rewrite, but it is a real operational step.
+- App Store release is mostly a deployment and build task once the app is solid.
+- The app should not be blocked by the idea of managed hosting right now; the bigger priority is getting the product working well first.
+
+Production readiness checklist
+1. App works locally end-to-end
+   - login works
+   - templates load
+   - exercises can be created
+   - workouts can start and finish
+   - history loads correctly
+
+2. Backend auth is stable
+   - JWT created properly
+   - token expiry is handled
+   - protected routes are validated
+   - invalid tokens fail cleanly
+
+3. Database is reliable
+   - Postgres runs locally and can be backed up
+   - schema is understood
+   - connection handling is stable
+   - no data loss from refreshes or duplicate actions
+
+4. Config is environment-based
+   - no hardcoded localhost values in production builds
+   - API URL centralized
+   - DB credentials and secrets stored in env files or secure deployment settings
+
+5. Refresh and state handling are clean
+   - data refreshes after create/update actions
+   - screens do not show stale or duplicate state
+   - errors are surfaced clearly to the user
+
+6. Validation and guardrails exist
+   - empty workout protection
+   - invalid session inputs prevented
+   - duplicate-key edge cases avoided
+   - forms rely on proper validation
+
+7. Auth and user flows are production-safe
+   - login/logout are consistent
+   - token persistence is safe
+   - expired-token behavior is clear
+   - app redirects correctly when logged out
+
+8. Backend API is organized
+   - route structure is clear
+   - controllers are not doing too much
+   - repeated logic is centralized
+   - shared API helper or client is considered
+
+9. Error handling is user-friendly
+   - API failures are caught
+   - users see a sensible error state
+   - app does not silently fail with broken data
+
+10. Deployment target is defined
+   - backend host chosen
+   - database host chosen
+   - production environment variables planned
+   - DNS / custom domain considered if needed
+
+11. Security basics are covered
+   - no secrets in repo
+   - CORS restricted appropriately
+   - production environment is distinct from local
+   - HTTPS-only API endpoints
+
+12. Mobile app is ready for production builds
+   - app name and identifiers are set correctly
+   - splash screen and icons updated
+   - permissions are reviewed
+   - production build process is working
+
+13. Monitoring and rollback plan exists
+   - logs visible
+   - deployments can be rolled back
+   - DB backups exist
+   - there is a plan for fixes after release
+
+14. Store readiness is planned
+   - Apple Developer / Google Play setup prepared
+   - app versioning strategy known
+   - release checklist exists
+   - privacy policy / support links are ready
+
+15. Product is stable enough to support real users
+   - major bugs are fixed
+   - core workout flow works reliably
+   - user data is not easy to lose
+   - it feels trustworthy enough for real usage
+
+Best next move
+- Keep working on the app locally and fix the core app issues.
+- Do not get stuck planning the full managed deployment too early.
+- Build the app until it feels stable, then move to the production infrastructure step.
+
+Useful mindset
+- Local dev is the right place for now.
+- Production is a separate layer that comes after the app is stable.
+- App store publishing is a milestone, not the beginning of the project.

@@ -37,6 +37,13 @@ function ServerUnreachable() {
   );
 }
 
+const pushedScreen = {
+  headerShown: true,
+  title: "",
+  headerBackTitle: "Back",
+  headerShadowVisible: false,
+};
+
 function RootNavigator() {
   const { status } = useAuth();
 
@@ -65,14 +72,23 @@ function RootNavigator() {
       </Stack.Protected>
 
       <Stack.Protected guard={isAuthenticated}>
+        {/* Root of the signed-in area: nothing to go back to. */}
         <Stack.Screen name="templates" options={{ headerShown: false }} />
-        <Stack.Screen name="create-template" options={{ headerShown: false }} />
-        <Stack.Screen name="history" options={{ headerShown: false }} />
-        <Stack.Screen name="template/[id]" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="template/[id]/add-exercise"
-          options={{ headerShown: false }}
-        />
+
+        {/*
+          Pushed screens get a real back arrow from the navigator, which also
+          enables the swipe-back gesture. The title is left empty because each
+          screen already renders its own heading.
+        */}
+        <Stack.Screen name="create-template" options={pushedScreen} />
+        <Stack.Screen name="history" options={pushedScreen} />
+        <Stack.Screen name="template/[id]" options={pushedScreen} />
+        <Stack.Screen name="template/[id]/add-exercise" options={pushedScreen} />
+
+        {/*
+          The workout screen keeps its own back control so leaving mid-workout
+          can confirm first, which a plain header arrow would bypass.
+        */}
         <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>

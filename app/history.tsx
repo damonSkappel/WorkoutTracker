@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -6,7 +6,6 @@ import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { api, getErrorMessage } from "../utils/api";
@@ -45,9 +44,6 @@ export default function History() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Past Workouts</Text>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.backButton}>← Back</Text>
-      </TouchableOpacity>
       <FlatList
         data={history}
         keyExtractor={(item) => `template-${item.template_id}`}
@@ -75,7 +71,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 60,
   },
   centered: {
     flex: 1,
@@ -111,10 +106,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
     marginTop: 40,
-  },
-  backButton: {
-    fontSize: 16,
-    color: "#007AFF",
-    marginBottom: 16,
   },
 });

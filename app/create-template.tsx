@@ -37,9 +37,6 @@ export default function CreateTemplate() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>New Template</Text>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.backButton}>← Back</Text>
-      </TouchableOpacity>
 
       <TextInput
         style={styles.input}
@@ -65,7 +62,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    paddingTop: 60,
   },
   title: {
     fontSize: 28,
@@ -93,10 +89,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  backButton: {
-    fontSize: 16,
-    color: "#007AFF",
-    marginBottom: 16,
   },
 });

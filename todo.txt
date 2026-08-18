@@ -55,3 +55,10 @@
 45. Remove the leftover debug console.logs in setController.updateSet.
 46. Email format is never validated, and username has no uniqueness check
     (expands on 41).
+
+------ found while fixing authorization (2026-08-18) ------
+47. BUG: the "Default sets" field on Add Exercise has never worked. The app sends
+    default_sets, but templateController.postExercise destructures only
+    { exercise_name, order_index } and never inserts it, so every exercise falls
+    back to the column default of 3. Asked for 2 sets in testing, got 3.
+    (44 and 45 are now done.)

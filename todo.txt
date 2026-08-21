@@ -95,9 +95,6 @@
            had nothing to sort by and exercise order was whatever Postgres felt like.
            The server now appends (MAX+1), existing rows were backfilled (migration
            003), and every ORDER BY has an id tiebreaker.
-55. [OPEN] No way to REORDER exercises in a template yet. Now that order_index is
-           real, this is a drag handle plus a PUT that rewrites the positions.
-
 ------ FUTURE PLANS ------
 Bigger features, not blocking anything. No particular order.
 
@@ -121,7 +118,23 @@ F1. Verify email addresses by sending a code.
 
 F2. Forgot password / password reset. Depends on F1.
 
-F3. Change password while logged in. Needs the current password re-entered, and
+F3. Reorder exercises within a template.
+    order_index is a real, distinct position per exercise now (was hardcoded to 1
+    for everything), so the data side is already in place - this is a UI job plus
+    one endpoint.
+    Roughly what this needs:
+      - a drag handle on each row of the template screen. react-native-draggable
+        -flatlist is the usual pick; RN has no built-in reorderable list.
+      - PUT /api/templates/:id/exercises/order taking the exercise ids in their
+        new order, rewriting order_index 1..N in a single transaction so a failure
+        part way through cannot leave two exercises sharing a position.
+      - ownership checked the same way as the other exercise endpoints, and a
+        check that the ids sent are exactly the ids in that template.
+    Worth noting: reordering a template does NOT change workouts already done.
+    Sets point at template_exercise_id, and past sessions keep whatever order
+    they were performed in, which is correct - history should not rewrite itself.
+
+F4. Change password while logged in. Needs the current password re-entered, and
     should revoke all other refresh tokens so a password change actually kicks
     out anyone else who was signed in.
 

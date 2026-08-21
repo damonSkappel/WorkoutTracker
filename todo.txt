@@ -61,9 +61,9 @@
              .env (NOT .env.example, which is never loaded) so an expiry could be reached
              in under a minute. Both paths verified: idle mid-session, and force-quit then
              reopen. Neither bounced to login.
-[OPEN] 43. TEST rate limiting from the app - 11 wrong passwords should show
-             "Too many login attempts...". Verified server-side (10 allowed, 11th = 429);
-             the app path is the only bit untested, and it is low risk.
+[DONE] 43. TEST rate limiting from the app - PASSED 2026-08-21. 11 wrong passwords
+             showed "Login failed: Too many login attempts. Please wait a few minutes
+             and try again." Server message reaches the user, not a generic error.
              Already passed: short password, login/logout, lands on /templates, backend-down message.
 
 ------ found while fixing the set entry bug (2026-08-18) ------
@@ -106,6 +106,17 @@
 56. [DONE] Finishing a workout with a blank reps field silently left the row NULL.
            Unfilled sets now prompt before finishing, separating "has a weight but no
            reps" from "empty", with Go back / Finish anyway.
+
+------ NOT DONE, worth knowing before calling this finished ------
+57. History is read-only. You can see that a workout happened, but there is no way
+    to tap it and see what you actually lifted. The data is all there.
+58. Nothing can be deleted - not a template, an exercise, a session, or an account.
+59. No automated tests in either repo. Everything has been verified by hand or by
+    throwaway scripts, which means nothing re-checks itself when you change code.
+60. Backend runs on localhost over plain HTTP. Not deployed, not reachable from
+    anywhere but your machine and LAN.
+61. The rate limiter counts in memory, so restarting the server forgets everyone.
+    Fine for one machine, wrong the moment there is more than one.
 
 ------ FUTURE PLANS ------
 Bigger features, not blocking anything. No particular order.

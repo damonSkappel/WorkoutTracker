@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -46,23 +46,97 @@ export default function Session() {
     );
   };
 
+  // A mirror of `sets` that is always current. handleFinish runs right after a
+  // field blur, and reading state from its closure there can miss the update
+  // that blur just triggered.
+  const setsRef = useRef<any[]>([]);
+  useEffect(() => {
+    setsRef.current = sets;
+  }, [sets]);
+
+  // React Native queues alerts, so two fired at once stack up and the user has
+  // to dismiss both -- which is exactly what happened when tapping Finish blurred
+  // a field and both the blur handler and Finish had something to say.
+  const alertOpen = useRef(false);
+  const alertOnce = (
+    title: string,
+    message: string,
+    buttons: {
+      text: string;
+      style?: "cancel" | "destructive";
+      onPress?: () => void;
+    }[] = [{ text: "OK" }],
+  ) => {
+    if (alertOpen.current) return false;
+    alertOpen.current = true;
+    Alert.alert(
+      title,
+      message,
+      buttons.map((button) => ({
+        text: button.text,
+        style: button.style,
+        onPress: () => {
+          alertOpen.current = false;
+          button.onPress?.();
+        },
+      })),
+    );
+    return true;
+  };
+
+  const raw = (value: any) => (value == null ? "" : String(value).trim());
+
+  // Blank means "not filled in yet", which is not the same as invalid.
+  /** Reps are whole numbers: 1.5 reps is not a thing you can do. */
+  const repsAreInvalid = (value: any) => {
+    const text = raw(value);
+    if (!text) return false;
+    const reps = Number(text);
+    return !Number.isInteger(reps) || reps < 1;
+  };
+
+  /** Weight may be fractional (22.5 is a real plate) but not negative. */
+  const weightIsInvalid = (value: any) => {
+    const text = raw(value);
+    if (!text) return false;
+    const weight = Number(text);
+    return !Number.isFinite(weight) || weight < 0;
+  };
+
   const saveSet = async (setId: number, weightOverride?: string) => {
-    const set = sets.find((s) => s.id === setId);
+    const set = setsRef.current.find((s) => s.id === setId);
     if (!set) return;
 
-    const rawWeight =
-      weightOverride ?? (set.weight == null ? "" : String(set.weight).trim());
-    const rawReps = set.reps == null ? "" : String(set.reps).trim();
+    const rawWeight = weightOverride ?? raw(set.weight);
+    const rawReps = raw(set.reps);
 
-    // Leaving the weight field to go fill in reps fires onEndEditing while the
-    // row is still half-entered. That's the normal way to type a set, not a
-    // mistake, so say nothing until the reps are in.
+    // A rejected value is wiped rather than left sitting in the box. Warning and
+    // leaving it there let the user dismiss the alert and submit it anyway.
+    if (repsAreInvalid(rawReps)) {
+      updateSetValue(setId, "reps", "");
+      alertOnce(
+        "Reps must be a whole number",
+        "You can't do part of a rep, so that entry was cleared. Enter a whole number like 8.",
+      );
+      return;
+    }
+
+    if (weightIsInvalid(rawWeight)) {
+      updateSetValue(setId, "weight", "");
+      alertOnce(
+        "That weight isn't a number",
+        "That entry was cleared. Enter a number like 135, or 0 for bodyweight.",
+      );
+      return;
+    }
+
+    // Leaving the weight field to fill in reps blurs a half-entered row. That is
+    // the normal way to type a set, so say nothing until the reps are in.
     if (!rawReps) return;
 
-    // Reps are in but the weight is blank. That's either an oversight or a
-    // bodyweight exercise, and only the user knows which.
+    // Reps are in but the weight is blank: bodyweight, or an oversight.
     if (!rawWeight) {
-      Alert.alert(
+      alertOnce(
         "No weight entered",
         "Add a weight, or record this as a bodyweight set and we'll save it as 0.",
         [
@@ -71,8 +145,7 @@ export default function Session() {
             text: "Bodyweight",
             onPress: () => {
               updateSetValue(setId, "weight", "0");
-              // Passed explicitly: the state update above has not landed yet,
-              // so re-reading `sets` here would still see it blank.
+              // Passed explicitly: the state update above has not landed yet.
               saveSet(setId, "0");
             },
           },
@@ -84,72 +157,41 @@ export default function Session() {
     const weight = Number(rawWeight);
     const reps = Number(rawReps);
 
-    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight < 0 || reps <= 0) {
-      Alert.alert("Invalid set", "Weight and reps must be valid numbers, and reps must be greater than zero.");
-      return;
-    }
-
     try {
-      await api.put(`/api/sets/${setId}`, {
-        weight,
-        reps,
-        completed: true,
-      });
-      // Record that this row is safely stored, so flushPendingSets below can
-      // tell what still needs sending.
+      await api.put(`/api/sets/${setId}`, { weight, reps, completed: true });
+      // Record that this row is stored, so the flush below knows what is left.
       setSets((prev) =>
         prev.map((s) =>
           s.id === setId ? { ...s, weight, reps, completed: true } : s,
         ),
       );
     } catch (err: any) {
-      const message = getErrorMessage(err, "Failed to save set");
-      Alert.alert("Error", message);
+      alertOnce("Error", getErrorMessage(err, "Failed to save set"));
     }
   };
 
   /**
    * Saving only ever happened on blur, via onEndEditing. Every field except the
-   * very last one gets blurred when the user taps the next field -- but the last
-   * field on the screen has nothing after it. The user types into it and taps
-   * Finish, so it never loses focus, onEndEditing never fires, and the value
-   * never leaves the device. The number pads have no return key either, so there
-   * is no other way to end editing.
-   *
-   * That is why the final set of the final exercise was always null. Rather than
-   * depend on focus at all, persist anything outstanding before leaving.
-   *
-   * Returns how many rows were skipped for having reps but no weight, since
-   * those are ambiguous (bodyweight or an oversight) and cannot be resolved
-   * without asking.
+   * last gets blurred when the user taps the next one, but the last field on the
+   * screen has nothing after it, so its value could be left behind. Rather than
+   * depend on focus, persist anything outstanding before leaving.
    */
-  const flushPendingSets = useCallback(async () => {
-    const outstanding = sets.filter((set) => !set.completed);
-
-    const complete = outstanding.filter((set) => {
-      const w = set.weight == null ? "" : String(set.weight).trim();
-      const r = set.reps == null ? "" : String(set.reps).trim();
-      if (!w || !r) return false;
-      return (
-        Number.isFinite(Number(w)) &&
-        Number.isFinite(Number(r)) &&
-        Number(w) >= 0 &&
-        Number(r) > 0
-      );
-    });
-
-    const repsWithoutWeight = outstanding.filter(
+  const flushPendingSets = async () => {
+    const complete = setsRef.current.filter(
       (set) =>
-        (set.reps == null ? "" : String(set.reps).trim()) &&
-        !(set.weight == null ? "" : String(set.weight).trim()),
-    ).length;
+        !set.completed &&
+        raw(set.weight) &&
+        raw(set.reps) &&
+        !weightIsInvalid(set.weight) &&
+        !repsAreInvalid(set.reps),
+    );
 
     await Promise.all(
       complete.map((set) =>
         api
           .put(`/api/sets/${set.id}`, {
-            weight: Number(set.weight),
-            reps: Number(set.reps),
+            weight: Number(raw(set.weight)),
+            reps: Number(raw(set.reps)),
             completed: true,
           })
           .catch((err) => {
@@ -158,11 +200,12 @@ export default function Session() {
       ),
     );
 
-    return { saved: complete.length, repsWithoutWeight };
-  }, [sets]);
+    return complete.length;
+  };
 
   const handleLeave = () => {
-    Alert.alert(
+    Keyboard.dismiss();
+    alertOnce(
       "Leave workout?",
       "Sets you've already entered are saved. The workout stays in progress, so you can come back to it.",
       [
@@ -179,31 +222,96 @@ export default function Session() {
     );
   };
 
-  const handleFinish = async () => {
-    Keyboard.dismiss();
-
+  const completeWorkout = async () => {
     try {
-      // Must happen before the session is marked complete, so the last set the
-      // user typed is not left behind.
-      const { repsWithoutWeight } = await flushPendingSets();
-
+      await flushPendingSets();
       await api.put(`/api/sessions/${id}`, {});
-
-      const note =
-        repsWithoutWeight > 0
-          ? `\n\n${repsWithoutWeight} set${repsWithoutWeight === 1 ? "" : "s"} had reps but no weight, so ${repsWithoutWeight === 1 ? "it was" : "they were"} not saved. Enter 0 for bodyweight.`
-          : "";
-
-      Alert.alert("Workout Complete!", `Great job!${note}`, [
+      alertOnce("Workout Complete!", "Great job!", [
         // dismissTo pops back to the existing templates screen. replace() would
         // swap this screen for a second copy of it, leaving the finished
         // workout's template still sitting behind it in the stack.
         { text: "OK", onPress: () => router.dismissTo("/templates") },
       ]);
     } catch (err: any) {
-      const message = getErrorMessage(err, "Failed to complete workout");
-      Alert.alert("Error", message);
+      alertOnce("Error", getErrorMessage(err, "Failed to complete workout"));
     }
+  };
+
+  const handleFinish = async () => {
+    Keyboard.dismiss();
+
+    // Tapping Finish also blurs whatever field was focused, which can fire
+    // saveSet. Let that settle before deciding anything.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // saveSet is already asking the user something. Do not stack a second alert
+    // on top of it, and do not finish the workout behind their back.
+    if (alertOpen.current) return;
+
+    const current = setsRef.current;
+    const badReps = current.filter((set) => repsAreInvalid(set.reps));
+    const badWeight = current.filter((set) => weightIsInvalid(set.weight));
+    const badCount = badReps.length + badWeight.length;
+
+    // Catches the last field too: it may never have blurred, so this is the
+    // first time anything has looked at what is in it.
+    if (badCount > 0) {
+      badReps.forEach((set) => updateSetValue(set.id, "reps", ""));
+      badWeight.forEach((set) => updateSetValue(set.id, "weight", ""));
+      alertOnce(
+        "Check your sets",
+        badCount === 1
+          ? "One entry wasn't a valid number, so it was cleared. Fill it in and finish again."
+          : `${badCount} entries weren't valid numbers, so they were cleared. Fill them in and finish again.`,
+      );
+      return;
+    }
+
+    const repsOnly = current.filter(
+      (set) => !set.completed && raw(set.reps) && !raw(set.weight),
+    );
+
+    if (repsOnly.length > 0) {
+      const n = repsOnly.length;
+      alertOnce(
+        "No weight entered",
+        n === 1
+          ? "One set has reps but no weight. Save it as a bodyweight set (0), or go back and add a weight."
+          : `${n} sets have reps but no weight. Save them as bodyweight sets (0), or go back and add weights.`,
+        [
+          { text: "Go back", style: "cancel" },
+          {
+            text: "Bodyweight",
+            onPress: async () => {
+              await Promise.all(
+                repsOnly.map((set) =>
+                  api
+                    .put(`/api/sets/${set.id}`, {
+                      weight: 0,
+                      reps: Number(raw(set.reps)),
+                      completed: true,
+                    })
+                    .catch((err) => {
+                      console.warn("[session] Could not save set", set.id, err);
+                    }),
+                ),
+              );
+              setSets((prev) =>
+                prev.map((s) =>
+                  repsOnly.some((p) => p.id === s.id)
+                    ? { ...s, weight: 0, completed: true }
+                    : s,
+                ),
+              );
+              await completeWorkout();
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    await completeWorkout();
   };
 
   if (loading) {
@@ -223,6 +331,7 @@ export default function Session() {
 
       <FlatList
         data={exercises}
+        keyboardShouldPersistTaps="handled"
         keyExtractor={(item) => `exercise-${item.id}`}
         renderItem={({ item }) => (
           <View style={styles.exerciseCard}>

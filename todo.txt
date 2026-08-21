@@ -16,9 +16,11 @@
 [DONE] 7. Missing id in useEffect dependency in the template detail screen - fetchExercises is now a useCallback keyed on [id].
 [DONE] 8. No input validation on sets - the sets picker is a bounded 1-10 stepper and the backend rejects anything outside that range.
 [DONE] 9. No loading state on the login button - button disables and shows "Logging in..." while in flight.
-[OPEN] 10. Typescript is in loose mode - "strict" : false in tsconfig means type errors can slip through silently.
-             NOTE: tsconfig also EXCLUDES components/hooks/constants/scripts, which is why tsc passes today.
-             Those errors were sidestepped, not fixed, so this is bigger than it looks. Same as 39.
+[DONE] 10. Typescript is in loose mode - now strict: true across the whole project.
+             The exclude list turned out NOT to be hiding anything: with strict on and
+             everything included, there were 0 errors. My earlier note claiming those
+             errors were "sidestepped" was an assumption I never checked - it was wrong.
+             Same as 39.
 [DONE] 11. When user makes a new template, they go directly to the add new exercises screen
 
 
@@ -40,7 +42,11 @@
 [DONE] 36. Add validation for sets and exercises - blank names and out-of-range set counts rejected on both sides.
 [DONE] 37. Prevent empty workouts from starting.
 [DONE] 38. Improve loading and error states.
-[OPEN] 39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode. (same as 10)
+[DONE] 39. Tighten TypeScript gradually - done in one step, since it cost 0 errors.
+             Also dropped the deprecated baseUrl (unused; TS 7 removes it).
+             NOTE: strict does not flag EXPLICIT `any`, and there are ~30 of those in
+             app/ and utils/ (useState<any[]>, err: any, (item: any)). Strict protects
+             new code; typing the API responses is the follow-up that pays off. See F5.
 [DONE] 40. Add backend startup docs - backend README now covers Postgres, env vars, migrations and the auth model.
 [DONE] 41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists.
              Email format + uniqueness now checked, username 2-30 chars, password 6-72.
@@ -133,6 +139,15 @@ F3. Reorder exercises within a template.
     Worth noting: reordering a template does NOT change workouts already done.
     Sets point at template_exercise_id, and past sessions keep whatever order
     they were performed in, which is correct - history should not rewrite itself.
+
+F5. Replace the explicit `any`s with real types.
+    strict: true is on, but it does not complain about `any` you wrote on purpose,
+    and the screens are full of them - useState<any[]> for templates/sets/exercises,
+    (item: any) in every renderItem, err: any in every catch.
+    The win: define the API response shapes once (Template, TemplateExercise,
+    WorkoutSession, WorkoutSet) and the compiler starts catching field-name typos
+    and null access in the screens, which is where the real bugs have been.
+    Reasonable order: types file -> utils/api.ts generics -> one screen at a time.
 
 F4. Change password while logged in. Needs the current password re-entered, and
     should revoke all other refresh tokens so a password change actually kicks

@@ -17,6 +17,24 @@ const MIN_USERNAME_LENGTH = 2;
 const MAX_USERNAME_LENGTH = 30;
 const MIN_PASSWORD_LENGTH = 6;
 
+// bcrypt on the backend only reads the first 72 bytes of a password and ignores
+// the rest, so anything longer gives a false sense of security. Counted in
+// bytes because one emoji costs four.
+const MAX_PASSWORD_BYTES = 72;
+
+const utf8ByteLength = (value: string) => {
+  let bytes = 0;
+  // for...of iterates code points, so surrogate pairs are counted once.
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0;
+    if (code <= 0x7f) bytes += 1;
+    else if (code <= 0x7ff) bytes += 2;
+    else if (code <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+};
+
 // Intentionally loose: catches honest typos like a missing @, without rejecting
 // unusual but valid addresses. Only sending mail proves an address really works.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +74,13 @@ export default function Signup() {
 
     if (trimmedPassword.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+
+    if (utf8ByteLength(trimmedPassword) > MAX_PASSWORD_BYTES) {
+      setError(
+        `Password is too long. Please use ${MAX_PASSWORD_BYTES} characters or fewer.`,
+      );
       return;
     }
 

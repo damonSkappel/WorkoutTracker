@@ -43,10 +43,7 @@
 [OPEN] 39. Tighten TypeScript gradually - move `tsconfig.json` toward strict mode. (same as 10)
 [DONE] 40. Add backend startup docs - backend README now covers Postgres, env vars, migrations and the auth model.
 [DONE] 41: add signup logic: emial has to be correct, and i am not sure if we have logic for checking if an email or username exiists.
-             Email format + uniqueness now checked, username 2-30 chars, password 6-72.
-             Password MAX is 72 BYTES because bcrypt silently ignores anything past
-             that - two different long passwords sharing the first 72 bytes both
-             verified against the same hash before this was capped.
+             Email format + uniqueness now checked, username 2-30 chars, password 6+.
              DECIDED: usernames are display-only and NOT unique (you log in with email).
              Cleaned up 10 junk/invalid accounts; users 4, 5, 10 kept.
 
@@ -78,31 +75,3 @@
 51. DECIDED: no delete for exercises/templates for now. The foreign keys are already
            ON DELETE NO ACTION, so Postgres refuses these deletes - the decision is
            already enforced, nothing to build.
-
------- FUTURE PLANS ------
-Bigger features, not blocking anything. No particular order.
-
-F1. Verify email addresses by sending a code.
-    Signup currently accepts any well-formed address without proving it exists.
-    Format validation only catches typos - it cannot tell you the mailbox is real
-    or that the person signing up owns it.
-    Roughly what this needs:
-      - an email_verifications table: user_id, code_hash, expires_at, consumed_at
-        (hash the code, same reasoning as refresh tokens - a db leak should not
-        hand out working codes)
-      - a 6-digit code, short expiry (10-15 min), rate limited, single use
-      - POST /auth/send-verification and POST /auth/verify-email
-      - a `verified_at` column on users, and a decision: can unverified users
-        use the app, or only look at a "check your inbox" screen? Letting them
-        in and nagging is friendlier than locking them out.
-      - an actual mail sender. This is the part that costs money/setup:
-        Resend, Postmark, SES. Needs a real sending domain, not localhost.
-    Prerequisite for a "forgot password" flow, which is the real reason a
-    verified address matters - without one, a lost password means a lost account.
-
-F2. Forgot password / password reset. Depends on F1.
-
-F3. Change password while logged in. Needs the current password re-entered, and
-    should revoke all other refresh tokens so a password change actually kicks
-    out anyone else who was signed in.
-

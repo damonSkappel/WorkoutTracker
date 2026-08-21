@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
@@ -94,11 +95,71 @@ export default function Session() {
         reps,
         completed: true,
       });
+      // Record that this row is safely stored, so flushPendingSets below can
+      // tell what still needs sending.
+      setSets((prev) =>
+        prev.map((s) =>
+          s.id === setId ? { ...s, weight, reps, completed: true } : s,
+        ),
+      );
     } catch (err: any) {
       const message = getErrorMessage(err, "Failed to save set");
       Alert.alert("Error", message);
     }
   };
+
+  /**
+   * Saving only ever happened on blur, via onEndEditing. Every field except the
+   * very last one gets blurred when the user taps the next field -- but the last
+   * field on the screen has nothing after it. The user types into it and taps
+   * Finish, so it never loses focus, onEndEditing never fires, and the value
+   * never leaves the device. The number pads have no return key either, so there
+   * is no other way to end editing.
+   *
+   * That is why the final set of the final exercise was always null. Rather than
+   * depend on focus at all, persist anything outstanding before leaving.
+   *
+   * Returns how many rows were skipped for having reps but no weight, since
+   * those are ambiguous (bodyweight or an oversight) and cannot be resolved
+   * without asking.
+   */
+  const flushPendingSets = useCallback(async () => {
+    const outstanding = sets.filter((set) => !set.completed);
+
+    const complete = outstanding.filter((set) => {
+      const w = set.weight == null ? "" : String(set.weight).trim();
+      const r = set.reps == null ? "" : String(set.reps).trim();
+      if (!w || !r) return false;
+      return (
+        Number.isFinite(Number(w)) &&
+        Number.isFinite(Number(r)) &&
+        Number(w) >= 0 &&
+        Number(r) > 0
+      );
+    });
+
+    const repsWithoutWeight = outstanding.filter(
+      (set) =>
+        (set.reps == null ? "" : String(set.reps).trim()) &&
+        !(set.weight == null ? "" : String(set.weight).trim()),
+    ).length;
+
+    await Promise.all(
+      complete.map((set) =>
+        api
+          .put(`/api/sets/${set.id}`, {
+            weight: Number(set.weight),
+            reps: Number(set.reps),
+            completed: true,
+          })
+          .catch((err) => {
+            console.warn("[session] Could not save set", set.id, err);
+          }),
+      ),
+    );
+
+    return { saved: complete.length, repsWithoutWeight };
+  }, [sets]);
 
   const handleLeave = () => {
     Alert.alert(
@@ -106,15 +167,34 @@ export default function Session() {
       "Sets you've already entered are saved. The workout stays in progress, so you can come back to it.",
       [
         { text: "Stay", style: "cancel" },
-        { text: "Leave", style: "destructive", onPress: () => router.back() },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            await flushPendingSets();
+            router.back();
+          },
+        },
       ],
     );
   };
 
   const handleFinish = async () => {
+    Keyboard.dismiss();
+
     try {
+      // Must happen before the session is marked complete, so the last set the
+      // user typed is not left behind.
+      const { repsWithoutWeight } = await flushPendingSets();
+
       await api.put(`/api/sessions/${id}`, {});
-      Alert.alert("Workout Complete!", "Great job!", [
+
+      const note =
+        repsWithoutWeight > 0
+          ? `\n\n${repsWithoutWeight} set${repsWithoutWeight === 1 ? "" : "s"} had reps but no weight, so ${repsWithoutWeight === 1 ? "it was" : "they were"} not saved. Enter 0 for bodyweight.`
+          : "";
+
+      Alert.alert("Workout Complete!", `Great job!${note}`, [
         // dismissTo pops back to the existing templates screen. replace() would
         // swap this screen for a second copy of it, leaving the finished
         // workout's template still sitting behind it in the stack.

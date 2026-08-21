@@ -81,10 +81,12 @@ export default function AddExercise() {
           default_sets: sets,
         });
       } else {
+        // No order_index: the server appends to the end of the template. The
+        // client used to send a hardcoded 1 for every exercise, which left them
+        // all tied and unordered.
         await api.post(`/api/templates/${id}/exercises`, {
           exercise_name: trimmedName,
           default_sets: sets,
-          order_index: 1,
         });
       }
       router.back();

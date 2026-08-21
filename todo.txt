@@ -19,7 +19,7 @@
 [OPEN] 10. Typescript is in loose mode - "strict" : false in tsconfig means type errors can slip through silently.
              NOTE: tsconfig also EXCLUDES components/hooks/constants/scripts, which is why tsc passes today.
              Those errors were sidestepped, not fixed, so this is bigger than it looks. Same as 39.
-[OPEN] 11. When user makes a new template, they go directly to the add new exercises screen
+[DONE] 11. When user makes a new template, they go directly to the add new exercises screen
 
 
 
@@ -70,9 +70,10 @@
              destructured away and never inserted, so everything got the column default of 3.
 
 ------ open, smallest first (2026-08-18) ------
-48. [OPEN] After creating a template, go straight to Add Exercise instead of back to the list.
+48. [DONE] After creating a template, go straight to Add Exercise instead of back to the list.
            (same as 11 - you can't start a workout without exercises anyway)
-49. [OPEN] Add an index on sets.session_id. Loading a workout does WHERE session_id = X,
+49. [DONE] Added indexes on sets.session_id and the other foreign key columns
+           (migration 002). Loading a workout did WHERE session_id = X,
            which is a full table scan today. Invisible at 60 rows, slow at 60,000.
 50. [DONE] Signup validation + cleaned up the bad users (41/46).
 51. DECIDED: no delete for exercises/templates for now. The foreign keys are already
@@ -85,6 +86,17 @@
            before finishing or leaving a workout.
            NOTE: the existing null rows in sessions 4, 5, 9 and 10 stay null - those
            values were never sent, so there is nothing to recover. Re-enter if needed.
+
+53. [DONE] Set entry: invalid reps were only warned about, so you could dismiss the
+           alert and submit 1.5 reps, which the backend rejected and left the row NULL.
+           Bad values are now cleared, validated again on finish (covering the last
+           field), and only one alert shows at a time.
+54. [DONE] order_index was hardcoded to 1 for every exercise, so ORDER BY order_index
+           had nothing to sort by and exercise order was whatever Postgres felt like.
+           The server now appends (MAX+1), existing rows were backfilled (migration
+           003), and every ORDER BY has an id tiebreaker.
+55. [OPEN] No way to REORDER exercises in a template yet. Now that order_index is
+           real, this is a drag handle plus a PUT that rewrites the positions.
 
 ------ FUTURE PLANS ------
 Bigger features, not blocking anything. No particular order.

@@ -24,8 +24,18 @@ export default function CreateTemplate() {
 
     setSaving(true);
     try {
-      await api.post("/api/templates", { name: trimmedName });
-      router.back();
+      const response = await api.post("/api/templates", { name: trimmedName });
+      const templateId = response.data?.id;
+
+      // A brand new template is empty, and you can't start a workout without
+      // exercises, so adding one is always the next step. replace() rather than
+      // push() so Back from there returns to the templates list instead of this
+      // form, where saving again would create a duplicate template.
+      if (templateId) {
+        router.replace(`/template/${templateId}/add-exercise`);
+      } else {
+        router.back();
+      }
     } catch (err: any) {
       const message = getErrorMessage(err, "Failed to create template");
       Alert.alert("Error", message);

@@ -311,6 +311,51 @@ export default function Session() {
       return;
     }
 
+    // Anything still unfilled will not be recorded at all. Silently dropping it
+    // looks identical to the app losing the data, so confirm it was deliberate.
+    // Leaving a set out is legitimate -- you may have stopped early -- hence a
+    // "Finish anyway" rather than a hard block.
+    const missingReps = current.filter(
+      (set) => !set.completed && raw(set.weight) && !raw(set.reps),
+    );
+    const untouched = current.filter(
+      (set) => !set.completed && !raw(set.weight) && !raw(set.reps),
+    );
+
+    if (missingReps.length > 0 || untouched.length > 0) {
+      const parts: string[] = [];
+      if (missingReps.length > 0) {
+        parts.push(
+          missingReps.length === 1
+            ? "1 set has a weight but no reps"
+            : `${missingReps.length} sets have a weight but no reps`,
+        );
+      }
+      if (untouched.length > 0) {
+        parts.push(
+          untouched.length === 1
+            ? "1 set is empty"
+            : `${untouched.length} sets are empty`,
+        );
+      }
+
+      alertOnce(
+        "Some sets aren't filled in",
+        `${parts.join(" and ")}. ${
+          missingReps.length + untouched.length === 1 ? "It won't" : "They won't"
+        } be recorded. Go back and fill ${
+          missingReps.length + untouched.length === 1 ? "it" : "them"
+        } in, or finish without ${
+          missingReps.length + untouched.length === 1 ? "it" : "them"
+        }.`,
+        [
+          { text: "Go back", style: "cancel" },
+          { text: "Finish anyway", onPress: () => completeWorkout() },
+        ],
+      );
+      return;
+    }
+
     await completeWorkout();
   };
 

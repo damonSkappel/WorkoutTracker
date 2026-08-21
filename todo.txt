@@ -57,11 +57,13 @@
              Cleaned up 10 junk/invalid accounts; users 4, 5, 10 kept.
 
 ------ auth hardening: still to test (2026-08-18) ------
-[OPEN] 42. TEST token refresh - log in, leave the app idle 20+ minutes, come back and tap around.
-             Should refresh silently. Getting bounced to login = bug.
-             (tip: set JWT_EXPIRES_IN=30s in the backend .env to test this in seconds, then revert)
-[OPEN] 43. TEST rate limiting - 11 wrong passwords in a row should return 429.
-             Verified server-side already; not yet tried from the app.
+[DONE] 42. TEST token refresh - PASSED on device 2026-08-21, with JWT_EXPIRES_IN=30s in
+             .env (NOT .env.example, which is never loaded) so an expiry could be reached
+             in under a minute. Both paths verified: idle mid-session, and force-quit then
+             reopen. Neither bounced to login.
+[OPEN] 43. TEST rate limiting from the app - 11 wrong passwords should show
+             "Too many login attempts...". Verified server-side (10 allowed, 11th = 429);
+             the app path is the only bit untested, and it is low risk.
              Already passed: short password, login/logout, lands on /templates, backend-down message.
 
 ------ found while fixing the set entry bug (2026-08-18) ------
@@ -101,6 +103,10 @@
            had nothing to sort by and exercise order was whatever Postgres felt like.
            The server now appends (MAX+1), existing rows were backfilled (migration
            003), and every ORDER BY has an id tiebreaker.
+56. [DONE] Finishing a workout with a blank reps field silently left the row NULL.
+           Unfilled sets now prompt before finishing, separating "has a weight but no
+           reps" from "empty", with Go back / Finish anyway.
+
 ------ FUTURE PLANS ------
 Bigger features, not blocking anything. No particular order.
 

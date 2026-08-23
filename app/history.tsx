@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -9,6 +10,14 @@ import {
   View,
 } from "react-native";
 import { api, getErrorMessage } from "../utils/api";
+import { colors, radius, shared, spacing } from "../utils/theme";
+
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
 export default function History() {
   const [history, setHistory] = useState<any[]>([]);
@@ -33,34 +42,77 @@ export default function History() {
     }, [fetchHistory]),
   );
 
+  const totalSessions = history.reduce(
+    (sum, group) => sum + group.sessions.length,
+    0,
+  );
+
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={shared.centered}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Past Workouts</Text>
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Past Workouts</Text>
+        {totalSessions > 0 ? (
+          <Text style={styles.subtitle}>
+            {totalSessions} completed workout{totalSessions === 1 ? "" : "s"}
+          </Text>
+        ) : null}
+      </View>
+
       <FlatList
         data={history}
         keyExtractor={(item) => `template-${item.template_id}`}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <View style={styles.templateGroup}>
-            <Text style={styles.templateName}>{item.template_name}</Text>
-            {item.sessions.map((session: any) => (
-              <View key={`session-${session.session_id}`} style={styles.sessionRow}>
-                <Text style={styles.sessionDate}>
-                  {new Date(session.date).toLocaleDateString()}
+          <View style={styles.group}>
+            <View style={styles.groupHeader}>
+              <Text style={styles.groupName} numberOfLines={1}>
+                {item.template_name}
+              </Text>
+              <View style={styles.countPill}>
+                <Text style={styles.countPillText}>
+                  {item.sessions.length}
                 </Text>
+              </View>
+            </View>
+
+            {item.sessions.map((session: any, index: number) => (
+              <View
+                key={`session-${session.session_id}`}
+                style={[styles.row, index === 0 && styles.rowFirst]}
+              >
+                <Ionicons
+                  name="checkmark-circle"
+                  size={17}
+                  color={colors.success}
+                />
+                <Text style={styles.rowDate}>{formatDate(session.date)}</Text>
               </View>
             ))}
           </View>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>No completed workouts yet.</Text>
+          <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <Ionicons
+                name="calendar-outline"
+                size={26}
+                color={colors.textMuted}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>Nothing logged yet</Text>
+            <Text style={styles.emptyBody}>
+              Finish a workout and it&apos;ll show up here.
+            </Text>
+          </View>
         }
       />
     </View>
@@ -68,43 +120,95 @@ export default function History() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  screen: shared.screen,
+  header: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 24,
+    ...shared.title,
+    marginBottom: spacing.xs,
   },
-  templateGroup: {
-    marginBottom: 24,
+  subtitle: shared.mutedText,
+
+  listContent: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    flexGrow: 1,
   },
-  templateName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#333",
+  group: {
+    ...shared.card,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
-  sessionRow: {
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 6,
-    marginLeft: 12,
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
   },
-  sessionDate: {
-    fontSize: 16,
-    color: "#555",
+  groupName: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
+  countPill: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countPillText: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  rowFirst: {
+    marginTop: spacing.md,
+  },
+  rowDate: {
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+
   empty: {
+    alignItems: "center",
+    paddingTop: 56,
+    paddingHorizontal: spacing.xxxl,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: spacing.xs,
+  },
+  emptyBody: {
+    ...shared.mutedText,
     textAlign: "center",
-    color: "#999",
-    marginTop: 40,
   },
 });

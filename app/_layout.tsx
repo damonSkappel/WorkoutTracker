@@ -1,4 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -6,19 +8,31 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  SafeAreaProvider,
-  SafeAreaView,
-} from "react-native-safe-area-context";
-import { API_URL } from "../utils/config";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../utils/auth";
+import { API_URL } from "../utils/config";
+import { colors, darkHeader, shared, spacing } from "../utils/theme";
+
+// Pushed screens get a real back arrow from the navigator, which also enables
+// the swipe-back gesture. The title is left empty because each screen already
+// renders its own heading.
+const pushedScreen = {
+  headerShown: true,
+  title: "",
+  headerBackTitle: "Back",
+  ...darkHeader,
+};
 
 function ServerUnreachable() {
   const { retry, signOut } = useAuth();
 
   return (
     <View style={styles.centered}>
-      <Text style={styles.title}>Can&apos;t reach the server</Text>
+      <View style={styles.iconCircle}>
+        <Ionicons name="cloud-offline-outline" size={28} color={colors.textMuted} />
+      </View>
+
+      <Text style={styles.heading}>Can&apos;t reach the server</Text>
       <Text style={styles.message}>
         You&apos;re still signed in, but we couldn&apos;t connect. Check your
         internet connection and try again.
@@ -26,23 +40,20 @@ function ServerUnreachable() {
 
       {__DEV__ ? <Text style={styles.debug}>{API_URL}</Text> : null}
 
-      <TouchableOpacity style={styles.button} onPress={retry}>
-        <Text style={styles.buttonText}>Try Again</Text>
+      <TouchableOpacity
+        style={styles.primary}
+        onPress={retry}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.primaryText}>Try Again</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={signOut}>
+      <TouchableOpacity onPress={signOut} hitSlop={8}>
         <Text style={styles.link}>Sign out</Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const pushedScreen = {
-  headerShown: true,
-  title: "",
-  headerBackTitle: "Back",
-  headerShadowVisible: false,
-};
 
 function RootNavigator() {
   const { status } = useAuth();
@@ -50,7 +61,7 @@ function RootNavigator() {
   if (status === "loading") {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -65,7 +76,7 @@ function RootNavigator() {
   // so a signed-out user can never land on a protected route at all, rather
   // than rendering it and getting bounced once a request comes back 401.
   return (
-    <Stack>
+    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />
@@ -75,11 +86,6 @@ function RootNavigator() {
         {/* Root of the signed-in area: nothing to go back to. */}
         <Stack.Screen name="templates" options={{ headerShown: false }} />
 
-        {/*
-          Pushed screens get a real back arrow from the navigator, which also
-          enables the swipe-back gesture. The title is left empty because each
-          screen already renders its own heading.
-        */}
         <Stack.Screen name="create-template" options={pushedScreen} />
         <Stack.Screen name="history" options={pushedScreen} />
         <Stack.Screen name="template/[id]" options={pushedScreen} />
@@ -101,6 +107,8 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        {/* Set once here rather than per screen: the whole app is dark. */}
+        <StatusBar style="light" />
         <SafeAreaView style={styles.safeArea}>
           <RootNavigator />
         </SafeAreaView>
@@ -112,48 +120,54 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    // The safe-area inset sits outside every screen, so a screen cannot paint
+    // into it. Without a colour here the strip beside the notch stays white.
+    backgroundColor: colors.bg,
   },
   centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
+    ...shared.centered,
+    padding: spacing.xxl,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 32,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xl,
+  },
+  heading: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "700",
+    letterSpacing: -0.4,
+    marginBottom: spacing.sm,
     textAlign: "center",
   },
   message: {
-    fontSize: 16,
-    color: "#555",
+    ...shared.mutedText,
     textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   debug: {
+    color: colors.textFaint,
     fontSize: 12,
-    color: "#999",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+  primary: {
+    ...shared.primaryButton,
     alignSelf: "stretch",
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryText: shared.primaryButtonText,
   link: {
-    color: "#007AFF",
-    fontSize: 16,
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "600",
     textAlign: "center",
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
 });

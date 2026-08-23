@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +13,13 @@ import {
   View,
 } from "react-native";
 import { api, getErrorMessage } from "../../utils/api";
+import {
+  colors,
+  PLACEHOLDER,
+  radius,
+  shared,
+  spacing,
+} from "../../utils/theme";
 
 export default function Session() {
   const { id } = useLocalSearchParams();
@@ -361,141 +369,289 @@ export default function Session() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={shared.centered}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
 
+  const doneCount = sets.filter((s) => s.completed).length;
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={handleLeave}>
-        <Text style={styles.backButton}>← Back</Text>
-      </TouchableOpacity>
-      <Text style={styles.title}>Active Workout</Text>
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={handleLeave}
+          style={styles.backButton}
+          hitSlop={10}
+          accessibilityLabel="Leave workout"
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
+        </TouchableOpacity>
+
+        <View style={styles.headerText}>
+          <View style={styles.liveRow}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveLabel}>In progress</Text>
+          </View>
+          <Text style={styles.title}>Active Workout</Text>
+        </View>
+      </View>
+
+      {/* A quiet progress bar rather than a number to chase: it answers "how
+          much is left" at a glance without pulling attention off the set. */}
+      <View style={styles.progressWrap}>
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: sets.length
+                  ? `${Math.round((doneCount / sets.length) * 100)}%`
+                  : "0%",
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.progressText}>
+          {doneCount} / {sets.length} sets
+        </Text>
+      </View>
 
       <FlatList
         data={exercises}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(item) => `exercise-${item.id}`}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.exerciseCard}>
             <Text style={styles.exerciseName}>{item.exercise_name}</Text>
 
             <View style={styles.setHeader}>
-              <Text style={[styles.setHeaderText, { flex: 0.5 }]}>Set</Text>
-              <Text style={styles.setHeaderText}>Weight (lbs)</Text>
-              <Text style={styles.setHeaderText}>Reps</Text>
+              <Text style={[styles.setHeaderText, styles.colSet]}>Set</Text>
+              <Text style={[styles.setHeaderText, styles.colField]}>
+                Weight
+              </Text>
+              <Text style={[styles.setHeaderText, styles.colField]}>Reps</Text>
+              <View style={styles.colStatus} />
             </View>
 
             {getSetsForExercise(item.id).map((set, index) => (
               <View key={`set-${set.id}`} style={styles.setRow}>
-                <Text style={[styles.setNumber, { flex: 0.5 }]}>
+                <Text style={[styles.setNumber, styles.colSet]}>
                   {index + 1}
                 </Text>
+
                 <TextInput
-                  style={styles.setInput}
+                  style={[styles.setInput, styles.colField]}
                   placeholder="0"
-                  value={set.weight !== null && set.weight !== undefined ? String(set.weight) : ""}
+                  placeholderTextColor={PLACEHOLDER}
+                  keyboardAppearance="dark"
+                  selectionColor={colors.accent}
+                  value={
+                    set.weight !== null && set.weight !== undefined
+                      ? String(set.weight)
+                      : ""
+                  }
                   onChangeText={(val) => updateSetValue(set.id, "weight", val)}
                   onEndEditing={() => saveSet(set.id)}
                   keyboardType="decimal-pad"
                 />
+
                 <TextInput
-                  style={styles.setInput}
+                  style={[styles.setInput, styles.colField]}
                   placeholder="0"
-                  value={set.reps !== null && set.reps !== undefined ? String(set.reps) : ""}
+                  placeholderTextColor={PLACEHOLDER}
+                  keyboardAppearance="dark"
+                  selectionColor={colors.accent}
+                  value={
+                    set.reps !== null && set.reps !== undefined
+                      ? String(set.reps)
+                      : ""
+                  }
                   onChangeText={(val) => updateSetValue(set.id, "reps", val)}
                   onEndEditing={() => saveSet(set.id)}
                   keyboardType="number-pad"
                 />
+
+                {/* Confirms the row reached the server. Given sets have gone
+                    missing before, showing that state is worth the space. */}
+                <View style={styles.colStatus}>
+                  {set.completed ? (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={colors.success}
+                    />
+                  ) : null}
+                </View>
               </View>
             ))}
           </View>
         )}
-        ListFooterComponent={
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
-            <Text style={styles.finishButtonText}>Finish Workout</Text>
-          </TouchableOpacity>
-        }
       />
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.finish}
+          onPress={handleFinish}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="checkmark" size={20} color={colors.accentInk} />
+          <Text style={styles.finishText}>Finish Workout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    paddingTop: 60,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
+  screen: shared.screen,
+
+  header: {
+    flexDirection: "row",
     alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 24,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   backButton: {
-    fontSize: 16,
-    color: "#007AFF",
-    marginBottom: 16,
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerText: {
+    flex: 1,
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 3,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+  },
+  liveLabel: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  title: {
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+
+  progressWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
+  progressText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   exerciseCard: {
-    backgroundColor: "#f0f0f0",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    ...shared.card,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   exerciseName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+    marginBottom: spacing.md,
   },
+
+  colSet: {
+    width: 28,
+  },
+  colField: {
+    flex: 1,
+  },
+  colStatus: {
+    width: 24,
+    alignItems: "center",
+  },
+
   setHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   setHeaderText: {
-    fontSize: 12,
-    color: "#666",
-    flex: 1,
+    color: colors.textFaint,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
     textAlign: "center",
   },
   setRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   setNumber: {
-    flex: 1,
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "700",
     textAlign: "center",
-    fontWeight: "bold",
   },
   setInput: {
-    flex: 1,
-    backgroundColor: "white",
-    borderRadius: 6,
-    padding: 8,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingVertical: 12,
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600",
     textAlign: "center",
-    marginHorizontal: 4,
-    fontSize: 16,
   },
-  finishButton: {
-    backgroundColor: "#34C759",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 40,
+
+  footer: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
   },
-  finishButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  finish: shared.primaryButton,
+  finishText: shared.primaryButtonText,
 });

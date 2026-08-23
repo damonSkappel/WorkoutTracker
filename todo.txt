@@ -118,6 +118,11 @@
 61. The rate limiter counts in memory, so restarting the server forgets everyone.
     Fine for one machine, wrong the moment there is more than one.
 
+62. [DONE] Dark theme across the whole app. Tokens live in utils/theme.ts; no screen
+           hardcodes a colour any more. Contrast checked against WCAG AA.
+63. [OPEN] Light/dark toggle. utils/theme.ts exports one palette today - this becomes
+           two palettes plus a hook, and no screen has to change.
+
 ------ FUTURE PLANS ------
 Bigger features, not blocking anything. No particular order.
 

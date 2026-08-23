@@ -10,6 +10,13 @@ import {
   View,
 } from "react-native";
 import { api, getErrorMessage } from "../../../utils/api";
+import {
+  colors,
+  PLACEHOLDER,
+  radius,
+  shared,
+  spacing,
+} from "../../../utils/theme";
 
 // Kept in sync with the backend, which rejects anything outside this range.
 const MIN_SETS = 1;
@@ -103,8 +110,8 @@ export default function AddExercise() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={shared.centered}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -118,8 +125,11 @@ export default function AddExercise() {
       <TextInput
         style={styles.input}
         placeholder="Exercise name (e.g. Bench Press)"
+        placeholderTextColor={PLACEHOLDER}
+        keyboardAppearance="dark"
         value={exerciseName}
         onChangeText={setExerciseName}
+        autoFocus={!isEditing}
       />
 
       <Text style={styles.label}>Sets</Text>
@@ -175,77 +185,65 @@ export default function AddExercise() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    backgroundColor: colors.bg,
+    padding: spacing.xl,
   },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  centered: shared.centered,
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 32,
+    ...shared.title,
+    marginBottom: spacing.xxxl,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 24,
+    ...shared.input,
+    marginBottom: spacing.xxl,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
+    ...shared.sectionLabel,
+    marginBottom: spacing.lg,
   },
   stepper: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   stepperButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#007AFF",
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
   },
   stepperButtonDisabled: {
-    backgroundColor: "#c7d6ea",
+    opacity: 0.35,
   },
   stepperButtonText: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    lineHeight: 32,
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: "600",
+    lineHeight: 30,
   },
   stepperValue: {
-    fontSize: 34,
-    fontWeight: "bold",
+    color: colors.text,
+    fontSize: 36,
+    fontWeight: "700",
+    letterSpacing: -1,
     minWidth: 90,
     textAlign: "center",
   },
   hint: {
+    color: colors.textFaint,
     fontSize: 13,
-    color: "#666",
-    marginBottom: 32,
+    lineHeight: 18,
+    marginBottom: spacing.xxxl,
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    backgroundColor: "#aaa",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  button: shared.primaryButton,
+  buttonDisabled: shared.disabled,
+  buttonText: shared.primaryButtonText,
 });

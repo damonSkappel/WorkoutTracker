@@ -1,7 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +14,7 @@ import {
 } from "react-native";
 import { api, NETWORK_ERROR_MESSAGE } from "../utils/api";
 import { useAuth } from "../utils/auth";
+import { colors, PLACEHOLDER, radius, shared, spacing } from "../utils/theme";
 
 // Mirrors the backend's checks so the form can fail fast without a round trip.
 // The backend still enforces all of these -- this is convenience, not security.
@@ -111,106 +116,150 @@ export default function Signup() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={(value) => {
-          setEmail(value);
-          clearError();
-        }}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        value={username}
-        onChangeText={(value) => {
-          setUsername(value);
-          clearError();
-        }}
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={(value) => {
-          setPassword(value);
-          clearError();
-        }}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={[styles.button, isSubmitting && styles.buttonDisabled]}
-        onPress={handleSignup}
-        disabled={isSubmitting}
+    <KeyboardAvoidingView
+      style={shared.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.buttonText}>
-          {isSubmitting ? "Creating account..." : "Sign Up"}
+        <Text style={styles.title}>Create account</Text>
+        <Text style={styles.subtitle}>
+          Takes a few seconds. Start logging today.
         </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace("/")}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
-      </TouchableOpacity>
-    </View>
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={18}
+              color={colors.danger}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance="dark"
+          value={email}
+          onChangeText={(value) => {
+            setEmail(value);
+            clearError();
+          }}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance="dark"
+          value={username}
+          onChangeText={(value) => {
+            setUsername(value);
+            clearError();
+          }}
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance="dark"
+          value={password}
+          onChangeText={(value) => {
+            setPassword(value);
+            clearError();
+          }}
+          secureTextEntry
+        />
+        <Text style={styles.hint}>
+          At least {MIN_PASSWORD_LENGTH} characters.
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.primary, isSubmitting && shared.disabled]}
+          onPress={handleSignup}
+          disabled={isSubmitting}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryText}>
+            {isSubmitting ? "Creating account..." : "Sign Up"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.replace("/")}
+          hitSlop={8}
+          style={styles.linkRow}
+        >
+          <Text style={styles.linkMuted}>Already have an account? </Text>
+          <Text style={styles.link}>Log in</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  content: {
+    flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
+    padding: spacing.xxl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 32,
-    textAlign: "center",
+    ...shared.title,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    ...shared.mutedText,
+    marginBottom: spacing.xxxl,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  errorText: {
+    ...shared.errorText,
+    flex: 1,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    ...shared.input,
+    marginBottom: spacing.md,
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+  hint: {
+    color: colors.textFaint,
+    fontSize: 13,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.lg,
   },
-  buttonDisabled: {
-    backgroundColor: "#8aa9d6",
-    opacity: 0.7,
+  primary: shared.primaryButton,
+  primaryText: shared.primaryButtonText,
+  linkRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: spacing.xxl,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
+  linkMuted: {
+    color: colors.textMuted,
+    fontSize: 15,
   },
   link: {
-    color: "#007AFF",
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 24,
-  },
-  error: {
-    color: "red",
-    marginBottom: 16,
-    textAlign: "center",
+    color: colors.accent,
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

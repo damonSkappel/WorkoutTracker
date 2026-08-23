@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -9,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { api, getErrorMessage } from "../utils/api";
+import { PLACEHOLDER, shared, spacing } from "../utils/theme";
 
 export default function CreateTemplate() {
   const [name, setName] = useState("");
@@ -45,59 +48,67 @@ export default function CreateTemplate() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>New Template</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Template name (e.g. Push Day)"
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TouchableOpacity
-        style={[styles.button, saving && styles.buttonDisabled]}
-        onPress={handleCreate}
-        disabled={saving}
-      >
-        <Text style={styles.buttonText}>
-          {saving ? "Creating..." : "Create Template"}
+    <KeyboardAvoidingView
+      style={shared.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={styles.content}>
+        <Text style={styles.title}>New Template</Text>
+        <Text style={styles.subtitle}>
+          Give it a name you&apos;ll recognise at the gym.
         </Text>
-      </TouchableOpacity>
-    </View>
+
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Push Day"
+          placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance="dark"
+          value={name}
+          onChangeText={setName}
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={handleCreate}
+        />
+
+        <View style={styles.spacer} />
+
+        <TouchableOpacity
+          style={[styles.primary, saving && shared.disabled]}
+          onPress={handleCreate}
+          disabled={saving}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryText}>
+            {saving ? "Creating..." : "Create Template"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  content: {
     flex: 1,
-    padding: 24,
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 32,
+    ...shared.title,
+    marginBottom: spacing.sm,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
+  subtitle: {
+    ...shared.mutedText,
+    marginBottom: spacing.xxxl,
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+  label: {
+    ...shared.sectionLabel,
+    marginBottom: spacing.md,
   },
-  buttonDisabled: {
-    backgroundColor: "#aaa",
+  input: shared.input,
+  spacer: {
+    flex: 1,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primary: shared.primaryButton,
+  primaryText: shared.primaryButtonText,
 });
